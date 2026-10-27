@@ -1,0 +1,6 @@
+.venv
+__pycache__
+data/cases/
+*.pyc
+.pytest_cache
+output/
