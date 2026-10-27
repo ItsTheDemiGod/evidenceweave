@@ -62,11 +62,20 @@ Line numbers are computed after merge/sort/deletion. Generator code: `evidencewe
 - **Parse CLI**: `python -m evidenceweave.cli parse --case-dir data/cases/case02 [--clock-offset ws-fin01=+90] [--year 2026] [--out output]` -> `output/<case>/events.jsonl` + summary. Year defaults to manifest `assumed_syslog_year`. Bad offsets exit 2 with a clear message.
 - Code: `evidenceweave/parsers/{common,auth_parser,nginx_parser,windows_parser,pipeline}.py`; `parse_case(case_dir, year=None, clock_offsets=None) -> Case`, `write_events(case, path)`.
 
+## Correlation and attack chain (Phase 3, `evidenceweave/correlation/`)
+**Anti-overfitting rule: the analysis never reads `answer_key.json` or manifest attack info and hard-codes no IPs, user names, URLs or file names.** Inputs are only the parsed events, `hosts.json` and CLI options. Only `scripts/check_against_key.py` and tests may read the key (a test greps `correlation/` for "answer_key"/"manifest" and another proves chain.json is byte-identical with the key and manifest deleted). Attacker, compromised user, payload server, pivot host are all DERIVED.
+- **Config** (`config.py`, `CorrelationConfig`; every int/float overridable on the CLI as `--field-name`, plus `--tolerance-seconds`): brute_force_min_failures=8, brute_force_window_seconds=600, access_after_failures_window_seconds=1800, web_recon_min_requests=15, web_recon_min_error_ratio=0.6 (403/404 share), web_recon_window_seconds=900, web_recon_min_sensitive_paths=3, cross_host_tolerance_seconds=300, lateral_window_seconds=900, sudo_after_access_window_seconds=1800, cron_session_match_seconds=60, sensitive_path_fragments (/.env /.git /wp-admin /wp-login /phpmyadmin /admin /backup /config /server-status /cgi-bin), suspicious_patterns (compiled regex list `DEFAULT_SUSPICIOUS_PATTERNS`; extend it there).
+- **Tolerance semantics**: across different hosts accept `B.start >= A.start - tolerance`; same host is strict. Skew is deliberately not estimated.
+- **Finding** (`findings.py`): `finding_id (F-<rule>-<n>, time order), rule, stage (brute_force|initial_access|privilege_escalation|persistence|lateral_movement|web_recon|missing_evidence), status (confirmed|attempts_only|partial|unprovable), start_time, end_time (UTC, corrected timestamps), hosts, entities{ips,users,hosts,urls}, evidence_event_ids (sorted by source,line), summary (template text), details{}`; `to_dict/from_dict`.
+- **Rules** (`rules/*.py`, `run(events, cfg, hosts, prior_findings)`; order brute_force, initial_access, privilege_escalation, lateral_movement, persistence, web_recon; unparsed events are skipped and counted): 1 brute_force = >=N failed ssh/4625 from one IP in a sliding window, merged bursts, confirmed only if a success follows (within the access window); 2 initial_access = success from an IP whose brute force ended within the window (windows logons only from non-inventory IPs); 3 privilege_escalation = sudo with a suspicious pattern by a compromised user or with a URL, or any sudo by a compromised user within the post-access window (partial); 4 persistence = (a) user_created after an initial access, (b) suspicious/URL cron commands grouped per (host,user,command) with matching session open/close lines (same pid+user, within 60s), (c) suspicious win_task_created not already explained by lateral movement; plus a missing_evidence/unprovable finding when a cron user was never created in the logs but first appears after the initial access; 5 lateral_movement = win logon type 3/10 whose src IP is an inventory host that has an initial_access/privesc finding, with preceding 4625s from that IP and, for the same user within 900s, 4672 / suspicious 4688 / 4698 (without hosts.json only a candidate with a suspicious process, status partial, details.note explains the missing inventory); 6 web_recon = per IP, >=15 requests with >=60% 403/404 in 15 min, or >=3 distinct sensitive paths; emits attempts_only.
+- **Chain** (`chain.py`): seed attacker IPs/users/hosts from initial_access findings, then fixpoint-grow: a finding joins if it shares a payload server (URL origin), IP, a pivot host IP (inventory ip of an attacker host) or a user with the set AND, for post-access stages, passes the time-order check vs the first initial access (cross-host tolerance). Hosts alone never link. Linked web_recon is upgraded to confirmed. Lateral movement without a verified pivot is never linked. `chain.json`: `case_name, generated_by_version, config, applied_clock_offsets, attacker_entities{ips,users,associated_users,hosts,urls}, stages[{stage,status,start_time,end_time,finding_ids,evidence_event_ids,links[{finding_id,reasons}]}], attempts_only_actors, unlinked_findings, unprovable_items, notes, stats`. missing_evidence attaches to its `affects_stage` (persistence) which becomes `partial`. IPs with brute force/recon but no successful access go to `attempts_only_actors` (never in a stage).
+- **Usage**: `python -m evidenceweave.cli correlate --case-dir data/cases/case02 [--clock-offset ws-fin01=+90] [--tolerance-seconds 300] [--year 2026] [--out output] [--brute-force-min-failures N ...]` -> `output/<case>/{findings,chain}.json` + summary. Measure: `python scripts/check_against_key.py --case-dir data/cases/case02 [--chain output/case02/chain.json]` (always exit 0).
+
 ## Phase plan
 - [x] Phase 0 Setup
 - [x] Phase 1 Synthetic log generator + answer key
 - [x] Phase 2 Parsers + normalized schema
-- [ ] Phase 3 Correlation rules
+- [x] Phase 3 Correlation rules
 - [ ] Phase 4 LLM narrator with citations
 - [ ] Phase 5 Citation verifier + retry loop
 - [ ] Phase 6 HTML report + evaluation + demo prep
@@ -81,6 +90,12 @@ Line numbers are computed after merge/sort/deletion. Generator code: `evidencewe
 - venv built from the standard Windows Python 3.12 (`%LOCALAPPDATA%\Programs\Python\Python312`), not the MSYS2 `python` on PATH, which creates a non-standard `.venv/bin` layout without `Scripts\Activate.ps1`.
 
 ## Open issues
+- Persistence evidence includes the cron `session closed` lines (as specified); the key only tags `session opened` + CMD, so check_against_key shows 4 "extra" lines per case (precision 0.67-0.69 on step 4). Genuinely part of the cron run, not a rule gap.
+- missing_evidence needs an initial_access finding (a user predating the compromise is never reported missing); with no recorded access nothing is reported.
+- Chain linking by user can over-link if a compromised user also has unrelated flagged activity; hosts never link on their own.
+- Persistence (a) flags any account created after access (e.g. the benign 4720); it stays out of the chain only because it shares no entity.
+- Rules were validated on 8 generated cases (seeds 42, 7, 1, 2, 3 x easy/hard); `burst_spans` tests only the maximal window per start (see its ponytail note).
+- Chain timestamps from Windows keep millisecond precision (`...:44.510000Z`), others print whole seconds.
 - Syslog year handling is a single fixed year: a log spanning New Year would mis-date January lines (fine for the synthetic cases).
 - ws-fin01's IP (10.0.0.70) in hosts.json is invented for the inventory; no log line contains it. Phase 3 still links hosts via the pivot IP 10.0.0.5.
 - Unparsed events borrow the previous event's timestamp (an approximation, flagged by action=unparsed).
@@ -110,11 +125,21 @@ Line numbers are computed after merge/sort/deletion. Generator code: `evidencewe
 - Decisions: skew is opt-in only; run loop in `parsers/common.py` shared by all parsers; hosts.json carries an extra `role` field so the nginx host can be resolved; ws-fin01 got IP 10.0.0.70 (outside the 10.0.0.10-60 noise range) because the generator never used one.
 - Problems: none blocking; Git Bash `/tmp` is not visible to Windows Python (used the scratchpad for ad-hoc checks).
 
+### Phase 3 — 2026-10-27
+- Built: `correlation/{config,findings,util,chain,engine}.py`, six rules in `correlation/rules/`, `correlate` CLI, `scripts/check_against_key.py`.
+- Files: `evidenceweave/correlation/**`, `evidenceweave/cli.py`, `scripts/check_against_key.py`, `tests/test_correlation.py`.
+- Results: case01 and case02 each give all 6 stages in order, attacker 203.0.113.45 / deploy (+ svc_backup associated), recall 1.000 on every step; case02: decoy 198.51.100.23 in attempts_only_actors only, benign 4720/4698 not in the chain, persistence partial with F-persistence-2 (svc_backup creation missing). 6 extra seeds (1,2,3 x easy/hard) all recall >= 0.9 with no decoy or benign lines. With `--clock-offset ws-fin01=+90` only lateral_movement times shift 90s earlier; evidence identical.
+- Tests: 68 passed (31 new correlation tests).
+- Decisions: rules take the prior findings as a 4th argument (initial_access needs brute_force etc.); lateral_movement runs before persistence so 4698 is not double counted; `associated_users` kept separate from compromised `users` in attacker_entities; no hard-coded names anywhere in `correlation/`.
+- Problems: first draft of the skew test used the wrong offset sign; fixed (positive offset = clock fast = events move earlier).
+
 ## How to run (Windows PowerShell)
 ```powershell
 .\.venv\Scripts\Activate.ps1        # activate venv
 python -m pytest                    # run tests
 python -m evidenceweave.cli --help  # run CLI
 python scripts\check_ollama.py      # check Ollama + models
+python -m evidenceweave.cli correlate --case-dir data\cases\case02
+python scripts\check_against_key.py --case-dir data\cases\case02
 ```
 
