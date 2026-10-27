@@ -8,6 +8,9 @@ from datetime import datetime, timedelta
 AUTH, NGINX, WIN = "linux_auth.log", "nginx_access.log", "windows_events.jsonl"
 SOURCES = (AUTH, NGINX, WIN)
 HOST_LINUX, HOST_WIN = "web01", "ws-fin01"
+# ws-fin01 never appears with an IP in the logs; 10.0.0.70 sits outside the noise range (10.0.0.10-60)
+HOSTS = [{"name": HOST_LINUX, "ip": "10.0.0.5", "os": "linux", "role": "web"},
+         {"name": HOST_WIN, "ip": "10.0.0.70", "os": "windows", "role": "workstation"}]
 
 
 @dataclass

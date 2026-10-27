@@ -6,7 +6,7 @@ import random
 from pathlib import Path
 
 from . import attack, noise
-from .formats import AUTH, NGINX, SOURCES, WIN, Entry
+from .formats import AUTH, HOSTS, NGINX, SOURCES, WIN, Entry
 from .key import build_key, build_manifest
 
 WIN_SKEW_HARD = 90
@@ -42,6 +42,8 @@ def generate(case: str, difficulty: str, seed: int, out_dir: Path) -> dict:
     for src, es in placed.items():
         (logs / src).write_text("".join(e.text + "\n" for e in es), encoding="utf-8", newline="\n")
 
+    (out_dir / case / "hosts.json").write_text(json.dumps({"hosts": HOSTS}, indent=2) + "\n",
+                                               encoding="utf-8", newline="\n")
     counts = {s: len(placed[s]) for s in SOURCES}
     key = build_key(case, seed, difficulty, skew, placed, dropped)
     for name, obj in (("answer_key.json", key),
