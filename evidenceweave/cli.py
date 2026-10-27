@@ -95,6 +95,25 @@ def cmd_correlate(args) -> None:
         print(f"  note: {n}")
 
 
+def _ensure_pipeline(args, case_dir: Path, out: Path) -> None:
+    """Run parse + correlate when chain/findings/events are missing (or offsets/tolerance/year were given)."""
+    from .correlation.config import CorrelationConfig
+    from .correlation.engine import correlate_case, write_outputs
+    from .parsers.pipeline import write_events
+
+    flags = args.clock_offset or args.tolerance_seconds is not None or args.year is not None
+    if flags or not all((out / f).exists() for f in ("chain.json", "findings.json", "events.jsonl")):
+        cfg = CorrelationConfig(**({"cross_host_tolerance_seconds": args.tolerance_seconds}
+                                   if args.tolerance_seconds is not None else {}))
+        try:
+            case, findings, chain = correlate_case(case_dir, cfg, args.year, dict(args.clock_offset or []))
+        except ValueError as e:
+            raise SystemExit(f"error: {e}")
+        write_outputs(case.name, findings, chain, args.out)
+        write_events(case, out / "events.jsonl")
+        print(f"parsed + correlated {case.name} -> {out}")
+
+
 def cmd_narrate(args) -> None:
     from .config import OLLAMA_MODEL
     from .correlation.config import CorrelationConfig
@@ -108,17 +127,7 @@ def cmd_narrate(args) -> None:
     if not case_dir.is_dir():
         raise SystemExit(f"error: case dir not found: {case_dir}")
     out = Path(args.out) / case_dir.name
-    flags = args.clock_offset or args.tolerance_seconds is not None or args.year is not None
-    if flags or not all((out / f).exists() for f in ("chain.json", "findings.json", "events.jsonl")):
-        cfg = CorrelationConfig(**({"cross_host_tolerance_seconds": args.tolerance_seconds}
-                                   if args.tolerance_seconds is not None else {}))
-        try:
-            case, findings, chain = correlate_case(case_dir, cfg, args.year, dict(args.clock_offset or []))
-        except ValueError as e:
-            raise SystemExit(f"error: {e}")
-        write_outputs(case.name, findings, chain, args.out)
-        write_events(case, out / "events.jsonl")
-        print(f"parsed + correlated {case.name} -> {out}")
+    _ensure_pipeline(args, case_dir, out)
     client = OllamaClient(args.model or OLLAMA_MODEL, num_ctx=args.num_ctx)
     ncfg = NarratorConfig(args.max_evidence_per_stage, chunk_size=args.chunk_size)
     results = []
@@ -138,6 +147,83 @@ def cmd_narrate(args) -> None:
         st = r["stats"]
         print(f"  {mode}: calls={st['calls']} failed_parses={st['failed_parses']} retries={st['retries']} "
               f"tokens={st['total_tokens']} seconds={r['total_seconds']} -> {path}")
+
+
+def cmd_verify(args) -> None:
+    import json
+
+    from .config import OLLAMA_MODEL
+    from .narrator.baseline import run_baseline
+    from .narrator.llm import LLMError, OllamaClient
+    from .narrator.narrate import NarratorConfig, narrate_chain
+    from .parsers.pipeline import load_hosts
+    from .verifier.baseline_verify import verify_baseline
+    from .verifier.corruption import run_corruption
+    from .verifier.judge import VERDICT_SCHEMA, Judge, parse_verdict
+    from .verifier.repair import VerifyConfig, verify_chain
+    from .verifier.verify import load_case_data
+
+    case_dir = Path(args.case_dir)
+    if not case_dir.is_dir():
+        raise SystemExit(f"error: case dir not found: {case_dir}")
+    out = Path(args.out) / case_dir.name
+    _ensure_pipeline(args, case_dir, out)
+    hosts = load_hosts(case_dir)
+    npath = out / "narrative.json"
+    recorded = json.loads(npath.read_text(encoding="utf-8")) if npath.exists() else None
+    model = args.model or (recorded or {}).get("model") or OLLAMA_MODEL
+    narrator = OllamaClient(model, num_ctx=args.num_ctx)
+    judge = None if args.no_judge else Judge(OllamaClient(
+        args.judge_model, num_ctx=8192, schema=VERDICT_SCHEMA, validator=parse_verdict))
+    vcfg = VerifyConfig(args.max_retries, args.max_cites, not args.no_judge)
+    ncfg = NarratorConfig(args.max_evidence_per_stage)
+    print(f"verify mode={args.mode} narrator={model} judge={'(none: deterministic only)' if judge is None else args.judge_model}")
+    if judge is not None and args.judge_model == model:
+        print("!!! WARNING: judge model == narrator model: the judge is NOT independent !!!")
+    try:
+        if recorded is None or not all("allowed_cite_ids" in s for s in recorded["stages"]) or recorded["model"] != model:
+            print(f"narrating first ({model}):")
+            narrate_chain(out, narrator, ncfg, progress=print)
+        if args.mode in ("chain", "all") or not (out / "narrative_verified.json").exists() and args.mode == "corruption":
+            data = load_case_data(out, hosts)
+            print("chain verification:")
+            r = verify_chain(data, narrator, judge, vcfg, progress=print)
+            sm, ver = r["report"]["summary"], r["verified"]["verification"]
+            sr = sm["supported_rate"]
+            print(f"  accepted={ver['accepted_total']} dropped={ver['dropped_total']} fallbacks={sm['fallbacks'] or 'none'} "
+                  f"repair narrator calls={sm['repair_narrator_calls']} model swaps={sm['model_swaps']}")
+            print(f"  supported-rate before repair {sr['before_repair']['accepted']}/{sr['before_repair']['total']}="
+                  f"{sr['before_repair']['rate']}  after repair {sr['after_repair']['accepted']}/{sr['after_repair']['total']}="
+                  f"{sr['after_repair']['rate']}  (judge mode: {ver['judge_mode']})")
+            print(f"  failure codes: {sm['failure_code_histogram']}")
+            print(f"  seconds per phase: {sm['seconds_per_phase']}  total={r['report']['total_seconds']}")
+            print(f"  -> {out / 'narrative_verified.json'}\n  -> {out / 'verification_report.json'}")
+        if args.mode in ("baseline", "all"):
+            if not (out / "baseline_narrative.json").exists():
+                print(f"baseline narrative missing: running the baseline narrator (num_ctx={args.num_ctx})")
+                run_baseline(out, narrator, NarratorConfig(args.max_evidence_per_stage, chunk_size=args.chunk_size), progress=print)
+            data = load_case_data(out, hosts)
+            print("baseline verification:")
+            b = verify_baseline(data, judge, args.max_cites, progress=print)
+            cov = b["entity_coverage"]
+            print(f"  supported-rate {b['rates']['accepted']}/{b['rates']['total']}={b['rates']['rate']}  "
+                  f"excluding cap-only failures {b['rates']['rate_excluding_cap_only']}  codes={b['failure_code_histogram']}")
+            print(f"  entity coverage: baseline {cov['baseline']['present']}/{cov['baseline']['total']}"
+                  + (f"  chain {cov['chain']['present']}/{cov['chain']['total']}" if 'chain' in cov else ""))
+            print(f"  -> {out / 'baseline_verification.json'}")
+        if args.mode in ("corruption", "all"):
+            data = load_case_data(out, hosts)
+            verified = json.loads((out / "narrative_verified.json").read_text(encoding="utf-8"))
+            print("corruption test:")
+            c = run_corruption(data, verified, judge, args.max_cites, progress=print)
+            for t, p in c["per_type"].items():
+                print(f"  {t:28} injected={p['injected']:2} det={p['caught_deterministic']:2} judge={p['caught_judge_only']:2} "
+                      f"missed={p['missed']:2} rate={p['catch_rate']}")
+            o, ctl = c["overall"], c["control"]
+            print(f"  overall catch rate {o['caught']}/{o['injected']}={o['catch_rate']}; false rejection "
+                  f"{ctl['rejected']}/{ctl['count']}={ctl['false_rejection_rate']}  -> {out / 'corruption_report.json'}")
+    except (LLMError, ValueError) as e:
+        raise SystemExit(f"error: {e}")
 
 
 def main(argv=None):
@@ -180,6 +266,22 @@ def main(argv=None):
     n.add_argument("--year", type=int)
     n.add_argument("--out", default=str(OUTPUT_DIR))
     n.set_defaults(func=cmd_narrate)
+    v = sub.add_parser("verify", help="verify the narrative's citations/claims, repair, baseline check, corruption test")
+    v.add_argument("--case-dir", required=True)
+    v.add_argument("--mode", choices=["chain", "baseline", "corruption", "all"], default="chain")
+    v.add_argument("--model", help="narrator model (default: the model recorded in narrative.json)")
+    v.add_argument("--judge-model", default="llama3.1:8b")
+    v.add_argument("--max-retries", type=int, default=2)
+    v.add_argument("--max-cites", type=int, default=8)
+    v.add_argument("--no-judge", action="store_true", help="deterministic layers only (ablation)")
+    v.add_argument("--num-ctx", type=int, default=16384)
+    v.add_argument("--max-evidence-per-stage", type=int, default=12)
+    v.add_argument("--chunk-size", type=int, default=120)
+    v.add_argument("--clock-offset", type=clock_offset, action="append", metavar="HOST=SECONDS")
+    v.add_argument("--tolerance-seconds", type=int)
+    v.add_argument("--year", type=int)
+    v.add_argument("--out", default=str(OUTPUT_DIR))
+    v.set_defaults(func=cmd_verify)
     for name in PHASES:
         sub.add_parser(name, help=f"{name} (placeholder)")
     args = p.parse_args(argv)

@@ -61,14 +61,16 @@ def parse_sentences(text: str) -> dict | None:
 
 class OllamaClient:
     def __init__(self, model: str = OLLAMA_MODEL, url: str = OLLAMA_URL, num_ctx: int = 8192,
-                 temperature: float = 0, seed: int = 42, keep_alive: str = "10m", timeout: int = 1800):
+                 temperature: float = 0, seed: int = 42, keep_alive: str = "10m", timeout: int = 1800,
+                 schema: dict | None = None, validator=None):
         self.model, self.url, self.keep_alive, self.timeout = model, url.rstrip("/"), keep_alive, timeout
         self.options = {"temperature": temperature, "seed": seed, "num_ctx": num_ctx}
+        self.schema, self.validator = schema or SENTENCES_SCHEMA, validator or parse_sentences
         self.json_mode = "schema"  # drops to "json" (sticky) if the server rejects the schema
 
     def _post(self, system: str, user: str):
         body = {"model": self.model, "stream": False, "keep_alive": self.keep_alive, "options": self.options,
-                "format": SENTENCES_SCHEMA if self.json_mode == "schema" else "json",
+                "format": self.schema if self.json_mode == "schema" else "json",
                 "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]}
         try:
             return requests.post(f"{self.url}/api/chat", json=body, timeout=self.timeout)
@@ -91,10 +93,10 @@ class OllamaClient:
                                  error=f"HTTP {r.status_code}")
             data = r.json()
             raw = data.get("message", {}).get("content", "")
-            parsed = parse_sentences(raw)
+            parsed = self.validator(raw)
             return LLMResult(parsed is not None, raw, parsed, time.time() - t0, self.json_mode,
                              data.get("prompt_eval_count"), data.get("eval_count"),
-                             None if parsed is not None else "reply is not valid sentences JSON")
+                             None if parsed is not None else "reply does not match the expected JSON structure")
         except (requests.Timeout, ValueError) as e:  # timeout / unreadable HTTP body: a failed call, not a crash
             return LLMResult(False, "", None, time.time() - t0, self.json_mode, error=f"{type(e).__name__}: {e}")
 

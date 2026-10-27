@@ -70,6 +70,30 @@ def template_sections(chain: dict, findings: list[dict], events: dict) -> tuple[
     return attempts, unprovable
 
 
+FEEDBACK_HEADER = "\n\nREPAIR FEEDBACK - your previous answer had problems:\n"
+FEEDBACK_FOOTER = ("\nRewrite the answer using ONLY the evidence lines and the allowed IDs above. Fix every problem listed, "
+                   "keep the facts that were fine, and reply with the JSON object only.")
+
+
+def with_feedback(user: str, feedback: str | None) -> str:
+    """Phase 5 repair rounds append the verifier's feedback; the first attempt is byte-identical to Phase 4."""
+    return user if not feedback else user + FEEDBACK_HEADER + feedback + FEEDBACK_FOOTER
+
+
+def narrate_stage(client: LLMClient, pack, feedback: str | None = None):
+    return call_json(client, P.STAGE_SYSTEM, with_feedback(P.stage_prompt(pack), feedback))
+
+
+def summary_info(packs) -> list[dict]:
+    return [{"stage": p.stage, "status": p.status, "start_time": p.start_time, "end_time": p.end_time,
+             "summaries": p.summaries, "notes": p.notes,
+             "cite_ids": list(dict.fromkeys([p.allowed_cite_ids[0], p.allowed_cite_ids[-1]]))} for p in packs]
+
+
+def narrate_summary(client: LLMClient, info: list[dict], feedback: str | None = None):
+    return call_json(client, P.SUMMARY_SYSTEM, with_feedback(P.summary_prompt(info), feedback))
+
+
 def _progress(cb, msg: str) -> None:
     if cb:
         cb(msg)
@@ -84,8 +108,8 @@ def narrate_chain(case_output_dir, client: LLMClient, config: NarratorConfig | N
     packs = build_packs(chain, findings, events, cfg.max_evidence_per_stage, cfg.max_raw_chars)
     t_all, stats = time.time(), {"calls": 0, "failed_parses": 0, "retries": 0, "tokens": None}
 
-    def run(name: str, system: str, user: str) -> tuple:
-        rec = call_json(client, system, user)
+    def run(name: str, call) -> tuple:
+        rec = call()
         stats["calls"] += rec.attempts
         stats["failed_parses"] += rec.failed_parses
         stats["retries"] += rec.retries
@@ -97,16 +121,14 @@ def narrate_chain(case_output_dir, client: LLMClient, config: NarratorConfig | N
 
     stage_out = []
     for p in packs:
-        rec, raw = run(p.stage, P.STAGE_SYSTEM, P.stage_prompt(p))
+        rec, raw = run(p.stage, lambda p=p: narrate_stage(client, p))
         stage_out.append({
             "stage": p.stage, "status": p.status, "source": "llm",
             "sentences": rec.parsed["sentences"] if rec.parsed else [], "parse_ok": rec.parsed is not None,
             "attempts": rec.attempts, "seconds": round(rec.seconds, 2), "evidence_shown": p.evidence_shown,
             "evidence_total": p.evidence_total, "allowed_cite_ids": p.allowed_cite_ids, "raw_output_file": raw})
-    info = [{"stage": p.stage, "status": p.status, "start_time": p.start_time, "end_time": p.end_time,
-             "summaries": p.summaries, "notes": p.notes,
-             "cite_ids": list(dict.fromkeys([p.allowed_cite_ids[0], p.allowed_cite_ids[-1]]))} for p in packs]
-    rec, raw = run("executive_summary", P.SUMMARY_SYSTEM, P.summary_prompt(info))
+    info = summary_info(packs)
+    rec, raw = run("executive_summary", lambda: narrate_summary(client, info))
     allowed = list(dict.fromkeys(i for s in info for i in s["cite_ids"]))
     attempts_only, unprovable = template_sections(chain, findings, events)
     out = {
