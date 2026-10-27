@@ -100,3 +100,42 @@ def test_format_sanity(cases, name):
 def test_hard_is_bigger(cases):
     e, h = logs(cases / "easy"), logs(cases / "hard")
     assert sum(map(len, h.values())) > 3 * sum(map(len, e.values()))
+
+
+# SHA-256 recorded BEFORE the Phase 4 answer-key fix: only answer_key.json may differ from these runs
+PRE_FIX = {
+    "case01/logs/linux_auth.log": "6e7d34ed0ae288b0a02903f960d1fdae6cc2f91a9882860e03561c2a189faa34",
+    "case01/logs/nginx_access.log": "6b2b1bbefc8d6fc719d9965f92c44ba952a8d4fb1d7c4ed80795a88d41a1a9c6",
+    "case01/logs/windows_events.jsonl": "725cd0b336ccb748bb882809c7c2369ad36a86f1e6bd2b9fb1a70f8f07d5b11a",
+    "case01/manifest.json": "4ec2af9b3b5985d4442eaf79711159e0da64daf92ed378fb35247c1a155df4b7",
+    "case01/hosts.json": "8011a4057e9122f585a2f53fe2262c7d3cb7bce6cd3bd0fe12cb81a330b1484b",
+    "case02/logs/linux_auth.log": "5985f3949a9d4a48e5ddf78c9c1390d8247acf274fe792493b81ae923c5ae13c",
+    "case02/logs/nginx_access.log": "b521a1ee2f53db675a5497b89c9ccab9a7f036c64c8442ada2e5f124d873271e",
+    "case02/logs/windows_events.jsonl": "59227b7ca35b6beafb73c1bc9c1712ce24ae56af65b32f0747ccfa1548f1d3e6",
+    "case02/manifest.json": "d9b3853ce5059d93e22e38d2b5b1b83d97ae0a27fe45a9028468d9f8a30d0d45",
+    "case02/hosts.json": "8011a4057e9122f585a2f53fe2262c7d3cb7bce6cd3bd0fe12cb81a330b1484b",
+}
+
+
+@pytest.fixture(scope="module")
+def fixed(tmp_path_factory):
+    r = tmp_path_factory.mktemp("fixed")
+    generate("case01", "easy", 42, r)
+    generate("case02", "hard", 7, r)
+    return r
+
+
+def test_key_fix_leaves_logs_manifest_hosts_byte_identical(fixed):
+    import hashlib
+    for rel, digest in PRE_FIX.items():
+        assert hashlib.sha256((fixed / rel).read_bytes()).hexdigest() == digest, rel
+
+
+@pytest.mark.parametrize("name", ["case01", "case02"])
+def test_cron_session_closed_lines_are_step4_evidence(fixed, name):
+    k = json.loads((fixed / name / "answer_key.json").read_text())
+    lines = (fixed / name / "logs" / AUTH).read_text().split("\n")
+    closed = {i + 1 for i, line in enumerate(lines)
+              if f"pam_unix(cron:session): session closed for user {k['created_user']}" in line}
+    step4 = {e["line_number"] for e in k["steps"][3]["evidence"] if e["source_file"] == AUTH}
+    assert len(closed) == 4 and closed <= step4

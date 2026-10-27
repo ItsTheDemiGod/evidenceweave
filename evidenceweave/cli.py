@@ -95,6 +95,51 @@ def cmd_correlate(args) -> None:
         print(f"  note: {n}")
 
 
+def cmd_narrate(args) -> None:
+    from .config import OLLAMA_MODEL
+    from .correlation.config import CorrelationConfig
+    from .correlation.engine import correlate_case, write_outputs
+    from .narrator.baseline import run_baseline
+    from .narrator.llm import LLMError, OllamaClient
+    from .narrator.narrate import NarratorConfig, narrate_chain
+    from .parsers.pipeline import write_events
+
+    case_dir = Path(args.case_dir)
+    if not case_dir.is_dir():
+        raise SystemExit(f"error: case dir not found: {case_dir}")
+    out = Path(args.out) / case_dir.name
+    flags = args.clock_offset or args.tolerance_seconds is not None or args.year is not None
+    if flags or not all((out / f).exists() for f in ("chain.json", "findings.json", "events.jsonl")):
+        cfg = CorrelationConfig(**({"cross_host_tolerance_seconds": args.tolerance_seconds}
+                                   if args.tolerance_seconds is not None else {}))
+        try:
+            case, findings, chain = correlate_case(case_dir, cfg, args.year, dict(args.clock_offset or []))
+        except ValueError as e:
+            raise SystemExit(f"error: {e}")
+        write_outputs(case.name, findings, chain, args.out)
+        write_events(case, out / "events.jsonl")
+        print(f"parsed + correlated {case.name} -> {out}")
+    client = OllamaClient(args.model or OLLAMA_MODEL, num_ctx=args.num_ctx)
+    ncfg = NarratorConfig(args.max_evidence_per_stage, chunk_size=args.chunk_size)
+    results = []
+    try:
+        if args.mode in ("chain", "both"):
+            print(f"chain narrator ({client.model}):")
+            r = narrate_chain(out, client, ncfg, progress=print)
+            results.append(("chain", r, out / "narrative.json"))
+        if args.mode in ("baseline", "both"):
+            print(f"baseline ({client.model}, chunk_size={args.chunk_size}):")
+            r = run_baseline(out, client, ncfg, progress=print)
+            results.append(("baseline", r, out / "baseline_narrative.json"))
+    except (LLMError, ValueError) as e:
+        raise SystemExit(f"error: {e}")
+    print(f"json mode used: {client.json_mode}   options: {client.options}")
+    for mode, r, path in results:
+        st = r["stats"]
+        print(f"  {mode}: calls={st['calls']} failed_parses={st['failed_parses']} retries={st['retries']} "
+              f"tokens={st['total_tokens']} seconds={r['total_seconds']} -> {path}")
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="evidenceweave", description="Log-correlation agent")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -123,6 +168,18 @@ def main(argv=None):
             c.add_argument(*OVERRIDES.get(f.name, []), "--" + f.name.replace("_", "-"), dest=f.name,
                            type=type(f.default), default=None, help=f"default {f.default}")
     c.set_defaults(func=cmd_correlate)
+    n = sub.add_parser("narrate", help="LLM narrative of the chain (and/or the naive baseline) via local Ollama")
+    n.add_argument("--case-dir", required=True)
+    n.add_argument("--mode", choices=["chain", "baseline", "both"], default="chain")
+    n.add_argument("--model", help="default: env EVIDENCEWEAVE_MODEL or qwen2.5:7b-instruct")
+    n.add_argument("--max-evidence-per-stage", type=int, default=12)
+    n.add_argument("--chunk-size", type=int, default=120)
+    n.add_argument("--num-ctx", type=int, default=8192)
+    n.add_argument("--clock-offset", type=clock_offset, action="append", metavar="HOST=SECONDS")
+    n.add_argument("--tolerance-seconds", type=int)
+    n.add_argument("--year", type=int)
+    n.add_argument("--out", default=str(OUTPUT_DIR))
+    n.set_defaults(func=cmd_narrate)
     for name in PHASES:
         sub.add_parser(name, help=f"{name} (placeholder)")
     args = p.parse_args(argv)

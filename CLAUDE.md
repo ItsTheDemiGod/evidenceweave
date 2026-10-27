@@ -71,12 +71,25 @@ Line numbers are computed after merge/sort/deletion. Generator code: `evidencewe
 - **Chain** (`chain.py`): seed attacker IPs/users/hosts from initial_access findings, then fixpoint-grow: a finding joins if it shares a payload server (URL origin), IP, a pivot host IP (inventory ip of an attacker host) or a user with the set AND, for post-access stages, passes the time-order check vs the first initial access (cross-host tolerance). Hosts alone never link. Linked web_recon is upgraded to confirmed. Lateral movement without a verified pivot is never linked. `chain.json`: `case_name, generated_by_version, config, applied_clock_offsets, attacker_entities{ips,users,associated_users,hosts,urls}, stages[{stage,status,start_time,end_time,finding_ids,evidence_event_ids,links[{finding_id,reasons}]}], attempts_only_actors, unlinked_findings, unprovable_items, notes, stats`. missing_evidence attaches to its `affects_stage` (persistence) which becomes `partial`. IPs with brute force/recon but no successful access go to `attempts_only_actors` (never in a stage).
 - **Usage**: `python -m evidenceweave.cli correlate --case-dir data/cases/case02 [--clock-offset ws-fin01=+90] [--tolerance-seconds 300] [--year 2026] [--out output] [--brute-force-min-failures N ...]` -> `output/<case>/{findings,chain}.json` + summary. Measure: `python scripts/check_against_key.py --case-dir data/cases/case02 [--chain output/case02/chain.json]` (always exit 0).
 
+## Answer-key fix (Phase 4, Part A)
+The planted cron job's `pam_unix(cron:session): session closed for user <cron user>` lines are now tagged as step 4 evidence (marker `CRON[<pid>]: pam_unix(cron:session): session closed`), in `generator/attack.py`. Logs, manifest.json and hosts.json are byte-identical to before (hashes asserted in `tests/test_generator.py`); only answer_key.json changed: +4 step-4 evidence items per case (case01 13, case02 12). Correlation precision is now 1.000 / recall 1.000 on both cases.
+
+## Narrator (Phase 4, `evidenceweave/narrator/`)
+The LLM only EXPLAINS the Phase 3 chain; it never decides what the attack is, and it never sees the answer key (a test scans all non-generator modules for the string `answer_key`).
+- **llm.py**: `LLMClient` Protocol (`model`, `options`, `json_mode`, `complete(system,user)->LLMResult`); `OllamaClient` (requests, `/api/chat`, stream false, `keep_alive` 10m, options temperature 0 / seed 42 / num_ctx 8192 default). Output format = JSON schema `{"sentences":[{"text","cites":[...]}]}`; if the server rejects it, falls back (sticky) to `format:"json"`; `json_mode` is recorded in outputs. Bad/malformed replies return a failure result (never raise); only an unreachable server (`ollama serve`) or missing model (`ollama pull <model>`) raises `LLMError`. `call_json` retries ONCE, only for unparseable replies (same prompt + reminder line).
+- **packs.py**: per chain stage a `Pack` (status, times, deterministic finding summaries, entities, integer counts, NOT-PROVABLE notes, evidence lines `ID | timestamp | raw_text<=300 chars`). Evidence capped at `max_evidence_per_stage` (default 12) with a deterministic spread (first, last, evenly spaced; chronological). `allowed_cite_ids` = exactly the IDs shown; `full_evidence_ids` = all stage IDs; omitted counts recorded.
+- **prompts.py** (`PROMPT_VERSION = "p4-v1"`, stored in outputs): strict system rules (only given facts, every sentence cites, cite only allowed IDs, never invent, say "not shown", no speculation, 2-5 sentences, copy times/IDs exactly, don't mention instructions); stage prompt; executive-summary prompt (per stage: status, time range, summaries, first/last shown ID); baseline chunk and final prompts.
+- **narrate.py** `narrate_chain(case_output_dir, client, config)`: one call per stage chronologically + one executive-summary call; citation problems are NOT repaired (Phase 5). Deterministic template sentences (`source: "template"`) for every `attempts_only_actors` entry ("<IP> made N failed login attempts / web requests between t1 and t2; no successful access from this address was observed", cites first/middle/last) and every `unprovable_items` entry (what could not be proven + indirect evidence, cites first 4). No LLM call for these.
+- **baseline.py** `run_baseline(...)`: no rules/chain/key; the sorted events.jsonl is split into consecutive chunks (default 120), each chunk -> LLM notes (same schema, same temperature/seed/model, rules forbidding invention + requiring cites), then one final call turns all notes into a 6-12 sentence chronological narrative. A size guard refuses (before any call) a chunk whose estimated tokens exceed 85% of num_ctx. NOTE: 120-event chunks are ~8-9k tokens, so run the baseline with `--num-ctx 16384`.
+- **Outputs** in `output/<case>/`: `narrative.json` (case_name, mode "chain", model, prompt_version, ollama_options, json_mode, total_seconds, created_at, executive_summary + executive_summary_meta, stages[{stage,status,source "llm",sentences,parse_ok,attempts,seconds,evidence_shown,evidence_total,allowed_cite_ids,raw_output_file}], attempts_only, unprovable, stats{calls,failed_parses,retries,total_tokens}); `baseline_narrative.json` (mode "baseline", chunk_size, number_of_chunks, chunks[...], collected_notes, final, sentences, failed_parses, retries, total_seconds, stats); `narrator_raw/<mode>_<model-with-colons-replaced>/<stage|chunk_NNN|final|executive_summary>.txt` holding the exact prompts and every raw reply.
+- **CLI**: `python -m evidenceweave.cli narrate --case-dir data/cases/case01 [--mode chain|baseline|both] [--model NAME] [--max-evidence-per-stage 12] [--chunk-size 120] [--num-ctx 8192] [--clock-offset HOST=SECONDS] [--tolerance-seconds 300] [--year 2026] [--out output]`. If chain.json/findings.json/events.jsonl are missing in the output folder (or any of clock-offset/tolerance/year is given) it runs parse + correlate first. Model default: env `EVIDENCEWEAVE_MODEL` or qwen2.5:7b-instruct.
+
 ## Phase plan
 - [x] Phase 0 Setup
 - [x] Phase 1 Synthetic log generator + answer key
 - [x] Phase 2 Parsers + normalized schema
 - [x] Phase 3 Correlation rules
-- [ ] Phase 4 LLM narrator with citations
+- [x] Phase 4 LLM narrator with citations (+ naive baseline)
 - [ ] Phase 5 Citation verifier + retry loop
 - [ ] Phase 6 HTML report + evaluation + demo prep
 
@@ -90,6 +103,9 @@ Line numbers are computed after merge/sort/deletion. Generator code: `evidencewe
 - venv built from the standard Windows Python 3.12 (`%LOCALAPPDATA%\Programs\Python\Python312`), not the MSYS2 `python` on PATH, which creates a non-standard `.venv/bin` layout without `Scripts\Activate.ps1`.
 
 ## Open issues
+- (Phase 5 input) Live qwen2.5:7b-instruct output contains defects the verifier must catch: an IP copied wrongly (`203.0113.45` instead of 203.0.113.45), stray junk characters in a sentence, a plain 4624 logon described as a "privileged logon", event IDs written inline in the text as well as in `cites`. Cites were all inside the allowed list this time, but claims are not checked against the cited events.
+- The baseline needs `--num-ctx 16384` for 120-event chunks; the chain narrator is run with the same options for a fair comparison.
+- Template attempts-only wording only knows failed-login / web-request findings; other actor stages fall back to "N events".
 - Persistence evidence includes the cron `session closed` lines (as specified); the key only tags `session opened` + CMD, so check_against_key shows 4 "extra" lines per case (precision 0.67-0.69 on step 4). Genuinely part of the cron run, not a rule gap.
 - missing_evidence needs an initial_access finding (a user predating the compromise is never reported missing); with no recorded access nothing is reported.
 - Chain linking by user can over-link if a compromised user also has unrelated flagged activity; hosts never link on their own.
@@ -133,6 +149,14 @@ Line numbers are computed after merge/sort/deletion. Generator code: `evidencewe
 - Decisions: rules take the prior findings as a 4th argument (initial_access needs brute_force etc.); lateral_movement runs before persistence so 4698 is not double counted; `associated_users` kept separate from compromised `users` in attacker_entities; no hard-coded names anywhere in `correlation/`.
 - Problems: first draft of the skew test used the wrong offset sign; fixed (positive offset = clock fast = events move earlier).
 
+### Phase 4 — 2026-10-27
+- Built: answer-key fix (cron session-closed lines tagged as step 4), `narrator/{llm,packs,prompts,narrate,baseline}.py`, `narrate` CLI, `tests/test_narrator.py`.
+- Files: `evidenceweave/narrator/**`, `evidenceweave/generator/attack.py`, `evidenceweave/cli.py`, `tests/test_narrator.py`, `tests/test_generator.py` (+2 tests), `tests/test_parsers.py` (key hashes updated).
+- Tests: 95 passed (27 new narrator tests, none touch real Ollama).
+- Live (qwen2.5:7b-instruct, temperature 0, seed 42, num_ctx 16384, json mode schema): case01 chain 48.5s (7 calls, 0 failed parses, 0 retries, 9,919 tokens); case01 baseline 212.1s (7 chunks + final = 8 calls, 0 failed parses, 0 retries, 100,824 tokens); case02 chain 46.0s (7 calls, 0 failed, 0 retries, 9,895 tokens).
+- Decisions: num_ctx 16384 for live runs so the unmodified 120-event baseline chunks fit; retry only for unparseable JSON; template sections never use the LLM; the baseline runs through the same client and retry helper as the chain narrator.
+- Problems: first baseline test used chunk sizes too large for the context (the guard caught it); `/tmp` in Git Bash is not visible to Windows Python.
+
 ## How to run (Windows PowerShell)
 ```powershell
 .\.venv\Scripts\Activate.ps1        # activate venv
@@ -141,5 +165,6 @@ python -m evidenceweave.cli --help  # run CLI
 python scripts\check_ollama.py      # check Ollama + models
 python -m evidenceweave.cli correlate --case-dir data\cases\case02
 python scripts\check_against_key.py --case-dir data\cases\case02
+python -m evidenceweave.cli narrate --case-dir data\cases\case01 --mode both --num-ctx 16384
 ```
 

