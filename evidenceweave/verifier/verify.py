@@ -6,13 +6,14 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from ..narrator.facts import linked_ids
 from ..narrator.packs import build_packs, load_events
 from ..schema import from_iso_z
 from .entities import Facts, build_pool, check_entities, fact_numbers, norm_num
 from .semantics import check_semantics
 from .structure import check_structure
-from .verdicts import (JUDGE_ERROR, JUDGE_PARTIAL, JUDGE_UNSUPPORTED, TOO_MANY_CITES, WORDS, SentenceVerdict, layer,
-                       reason, skipped)
+from .verdicts import (CITES_NOT_FROM_FACTS, FACT_ID_UNKNOWN, JUDGE_ERROR, JUDGE_PARTIAL, JUDGE_UNSUPPORTED, NO_FACT_REFERENCE,
+                       TOO_MANY_CITES, WORDS, SentenceVerdict, layer, reason, skipped)
 
 
 @dataclass
@@ -25,6 +26,7 @@ class UnitCtx:
     summaries: list = field(default_factory=list)  # extra ground truth shown to the judge (executive summary)
     skip_semantics: bool = False
     template: bool = False  # template/fallback: layers 1 and 2 only, never judged
+    fact_map: dict | None = None  # facts mode: fact_id -> {text, cites}; None = raw-evidence mode (no facts layer)
 
 
 def _ints(d: dict) -> set:
@@ -68,6 +70,10 @@ class CaseData:
     def pack(self, stage: str):
         return next(p for p in self.packs if p.stage == stage)
 
+    def narrative_stage_facts(self, stage: str) -> list:
+        """The facts the narrator was given for a stage (facts mode narrative.json)."""
+        return next((x.get("facts", []) for x in (self.narrative or {}).get("stages", []) if x["stage"] == stage), [])
+
 
 def load_case_data(out_dir, hosts: dict, narrative: dict | None = None, max_evidence: int = 12) -> CaseData:
     d = Path(out_dir)
@@ -80,21 +86,31 @@ def load_case_data(out_dir, hosts: dict, narrative: dict | None = None, max_evid
         max_evidence = narrative.get("max_evidence_per_stage", max_evidence)
     packs = build_packs(chain, findings, events, max_evidence)
     by_id = {f["finding_id"]: f for f in findings}
+    facts_mode = bool(narrative and narrative.get("narration_mode") == "facts")
+    stage_narr = {s["stage"]: s for s in (narrative or {}).get("stages", [])}
     ctxs, all_facts = {}, Facts()
     ent_lines = []
     for p, st in zip(packs, chain["stages"]):
         members = [by_id[i] for i in st["finding_ids"]]
-        fx = facts_for(p.start_time, p.end_time, members, [p.evidence_shown, p.evidence_total])
-        ctxs[p.stage] = UnitCtx(p.stage, "stage", set(p.allowed_cite_ids), fx)
+        linked = [by_id[l] for f in members for l in linked_ids(f) if l in by_id]  # numbers of linked findings are stage facts
+        fx = facts_for(p.start_time, p.end_time, members + linked, [p.evidence_shown, p.evidence_total])
+        if facts_mode and p.stage in stage_narr:
+            sn = stage_narr[p.stage]
+            ctxs[p.stage] = UnitCtx(p.stage, "stage", set(sn["allowed_cite_ids"]), fx,
+                                    fact_map={f["fact_id"]: f for f in sn.get("facts", [])})
+        else:
+            ctxs[p.stage] = UnitCtx(p.stage, "stage", set(p.allowed_cite_ids), fx)
         all_facts.times |= fx.times
         all_facts.numbers |= fx.numbers
         ent_lines.append(" ".join(v for vals in p.entities.values() for v in vals))
     ent_lines.append(" ".join(hosts))
     all_facts.text = "\n".join(ent_lines)
-    ex_allowed = set((narrative or {}).get("executive_summary_meta", {}).get("allowed_cite_ids", []))
+    meta = (narrative or {}).get("executive_summary_meta", {})
+    ex_allowed = set(meta.get("allowed_cite_ids", []))
     ctxs["executive_summary"] = UnitCtx(
         "executive_summary", "executive_summary", ex_allowed, all_facts,
-        summaries=[f"{p.stage}: {' '.join(p.summaries)}" for p in packs])
+        summaries=[f"{p.stage}: {' '.join(p.summaries)}" for p in packs],
+        fact_map=({f["fact_id"]: f for f in meta.get("facts", [])} if facts_mode else None))
     return CaseData(d.name, chain, findings, events, hosts, narrative, packs, ctxs, d)
 
 
@@ -118,9 +134,29 @@ def template_ctx(data: CaseData, kind: str, index: int, cites: list) -> UnitCtx:
 def fallback_ctx(data: CaseData, unit: str, allowed: list) -> UnitCtx:
     """Context for the deterministic fallback of a unit (stage or executive summary)."""
     base = data.ctxs[unit]
+    if base.fact_map is not None:  # facts mode: the fact's own cites + text ground it; semantics still applies
+        return UnitCtx(unit, base.section, set(allowed), base.facts, [], base.summaries, skip_semantics=False,
+                       template=True, fact_map=base.fact_map)
     pool = (list(data.pack(unit).full_evidence_ids) if unit != "executive_summary"
             else [i for p in data.packs for i in p.full_evidence_ids])
     return UnitCtx(unit, base.section, set(allowed), base.facts, pool, base.summaries, skip_semantics=True, template=True)
+
+
+def check_fact_refs(ctx: UnitCtx, fact_ids, cites_final) -> dict:
+    """Facts mode: the sentence must say which facts it is based on and copy (a subset of) their cites."""
+    out = []
+    if not fact_ids:
+        out.append(reason(NO_FACT_REFERENCE, "the sentence lists no fact_ids"))
+        return layer(out)
+    known = [f for f in fact_ids if f in ctx.fact_map]
+    for f in fact_ids:
+        if f not in ctx.fact_map:
+            out.append(reason(FACT_ID_UNKNOWN, f"{f} is not one of this unit's facts"))
+    union = {c for f in known for c in ctx.fact_map[f]["cites"]}
+    stray = sorted(set(cites_final) - union)
+    if known and stray:
+        out.append(reason(CITES_NOT_FROM_FACTS, f"{', '.join(stray)} not among the cites of {', '.join(known)}"))
+    return layer(out)
 
 
 class Verifier:
@@ -128,14 +164,19 @@ class Verifier:
         self.events, self.host_names, self.max_cites = events, list(host_names), max_cites
 
     def det(self, ctx: UnitCtx, text: str, cites: list, index: int, attempt: int, source: str = "llm",
-            use_judge: bool = True) -> SentenceVerdict:
+            use_judge: bool = True, fact_ids: list | None = None) -> SentenceVerdict:
         norm, final, st = check_structure(text, cites, ctx.allowed, self.events, self.max_cites)
         v = SentenceVerdict(index, ctx.name, ctx.section, source, attempt, text, norm, list(cites or []), final)
+        v.fact_ids = list(fact_ids or [])
         v.layer_results["structure"] = st
+        ref_text = ""
+        if ctx.fact_map is not None:  # facts mode only
+            v.layer_results["facts"] = check_fact_refs(ctx, v.fact_ids, final)
+            ref_text = "\\n".join(ctx.fact_map[f]["text"] for f in v.fact_ids if f in ctx.fact_map)
         cited = [self.events[c] for c in final if c in self.events]
         pool_ev = cited + [self.events[i] for i in ctx.pool_events if i in self.events]
-        if pool_ev or ctx.facts.text:
-            facts = Facts(ctx.facts.times, ctx.facts.numbers | {str(len(final))}, ctx.facts.text)
+        if pool_ev or ctx.facts.text or ref_text:
+            facts = Facts(ctx.facts.times, ctx.facts.numbers | {str(len(final))}, ctx.facts.text + "\\n" + ref_text)
             v.layer_results["entities"] = check_entities(norm, build_pool(pool_ev, facts), self.host_names)
         else:
             v.layer_results["entities"] = skipped("no existing cited events to ground against")
@@ -157,8 +198,12 @@ class Verifier:
         cited = [self.events[c] for c in v.cites_final if c in self.events]
         res = judge.judge(v.text_normalized, cited, ctx.summaries or None)
         v.judge = {k: res[k] for k in ("model", "verdict", "reason", "seconds")}
-        code = {"supported": None, "partial": JUDGE_PARTIAL, "unsupported": JUDGE_UNSUPPORTED}.get(res["verdict"], JUDGE_ERROR)
-        v.layer_results["judge"] = layer([reason(code, res["reason"])] if code else [])
+        v.judge.update({k: res[k] for k in ("runs", "agreement", "own_vs_derived_disagreements") if k in res})
+        if "codes" in res:  # hardened judge: failure codes were derived in code
+            v.layer_results["judge"] = layer([reason(c, d) for c, d in res["codes"]])
+        else:
+            code = {"supported": None, "partial": JUDGE_PARTIAL, "unsupported": JUDGE_UNSUPPORTED}.get(res["verdict"], JUDGE_ERROR)
+            v.layer_results["judge"] = layer([reason(code, res["reason"])] if code else [])
         v.accepted = res["verdict"] == "supported"
 
 

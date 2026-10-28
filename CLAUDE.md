@@ -93,6 +93,17 @@ Every narrative sentence is either VERIFIED or visibly absent. The verifier neve
 - **Corruption test** (`corruption.py`, seed 42, cap 70): 11 deterministic corruption types (ip_digit_drop, ip_swap, time_shift, number_change, username_swap, cite_nonexistent, cite_foreign_stage, cite_wrong_event, fabricated_entity, fabricated_claim_no_entity, cite_padding) applied one at a time to the ACCEPTED LLM sentences, selected round-robin across types; the full verifier (with the real judge) runs on every sample and on every clean base sentence as a control.
 - **CLI**: `python -m evidenceweave.cli verify --case-dir data/cases/case01 [--mode chain|baseline|corruption|all] [--model NARRATOR] [--judge-model llama3.1:8b] [--max-retries 2] [--max-cites 8] [--no-judge] [--num-ctx 16384] [--max-evidence-per-stage 12] [--chunk-size 120] [--clock-offset ..] [--tolerance-seconds ..] [--year ..] [--out output]`. Re-narrates first if narrative.json is missing, lacks allowed_cite_ids, or `--model` differs from the recorded model.
 
+## Phase 5b: fact-sheet narration, hardened judge, reproducibility
+Part 0 diagnosis is in `output/diagnosis_phase5b.md` (made by `scripts/make_diagnosis.py`, verdicts assigned by hand): 47 failing Phase 5 LLM sentences = 33 PROMPT_DESIGN_PROBLEM, 10 GENUINE_NARRATOR_ERROR, 4 VERIFIER_TOO_STRICT. Only verifier loosening: `win_task_created` counts as support for "process/command" phrases (`semantics.py`). Also found/fixed a stale `events.jsonl` (clock-corrected Windows times vs raw `chain.json`): `pipeline_meta.json` now stores offsets/tolerance/year.
+- **Facts mode (CLI default; library default stays raw)**: `narrator/facts.py` `build_facts(chain, findings, events, max_facts=8)` makes deterministic, self-provable atomic facts per stage `{fact_id "<stage>-F<n>", text, cites<=8, kind}` (kinds by priority time_window<actor<key_action<count<link<status, shown chronologically). Counts are exact only if every counted event is cited, else "At least k". Prompts `p5b-facts-v1` (`PROMPT_VERSION_FACTS`); sentences carry `fact_ids`; cites must be a subset of the referenced facts' cites. New codes `FACT_ID_UNKNOWN`, `CITES_NOT_FROM_FACTS`, `NO_FACT_REFERENCE`, also `DANGLING_ENDING`, `JUDGE_QUOTE_INVALID`, `JUDGE_DISAGREE`. Fallback = facts verbatim. Report has a fact-coverage block. Raw mode (`p4-v1`) stays available (`--narration-mode raw`).
+- **Judge `p5b-claims-v2`** (`ClaimJudge`): claims with ONE exact quote each (found in the shown raw_text or ISO timestamp); verdict derived in code; run twice (second seed 43) and both must be supported else `JUDGE_DISAGREE`; `--single-judge`; independence warning; timeout 300s, num_predict 900. Windows EventID legend in the judge system prompt.
+- **Repair**: seed 42+round, temperature 0.3, sentence-level feedback, accepted sentences frozen, repair-effectiveness block.
+- **Bug fixes**: quote-balanced normalization (only excess closing quotes removed); dangling endings ("as shown by") removed or `DANGLING_ENDING`.
+- **Reproducibility**: `run_metadata` (models, Ollama version/digests, options, prompt versions, git hash, mode) in 5 output files; `--repeat N` -> `output/<case>/runs/<mode>_run<k>/` + `repeat_summary.json` (values/mean/min/max computed from each run's own files). Code: `evidenceweave/runmeta.py`, `verifier/runner.py`.
+- **Corruption**: >=10 no-entity fake claims, controls go through the double judge, three-way split (deterministic / judge-only / missed).
+- **CLI**: `verify --narration-mode facts|raw --max-facts-per-stage 8 --single-judge --repeat N --repair-temperature 0.3`.
+- Live suite driver: `run_live_5b.sh`; report printer: `scripts/phase5b_report.py`; logs `live5b/`.
+
 ## Phase plan
 - [x] Phase 0 Setup
 - [x] Phase 1 Synthetic log generator + answer key
@@ -100,6 +111,7 @@ Every narrative sentence is either VERIFIED or visibly absent. The verifier neve
 - [x] Phase 3 Correlation rules
 - [x] Phase 4 LLM narrator with citations (+ naive baseline)
 - [x] Phase 5 Citation verifier + retry loop
+- [x] Phase 5b Fact-sheet narration, hardened judge, reproducibility
 - [ ] Phase 6 HTML report + evaluation + demo prep
 
 ## Working rules (Claude Code)
@@ -112,6 +124,11 @@ Every narrative sentence is either VERIFIED or visibly absent. The verifier neve
 - venv built from the standard Windows Python 3.12 (`%LOCALAPPDATA%\Programs\Python\Python312`), not the MSYS2 `python` on PATH, which creates a non-standard `.venv/bin` layout without `Scripts\Activate.ps1`.
 
 ## Open issues
+- (Phase 5b, measured) Judge protocol limits: an aggregate claim ("4 failed logons", "ran 4 times") cannot be backed by ONE quote, so it is structurally rejected (JUDGE_QUOTE_INVALID/PARTIAL); relational words ("preceded", "over the network", "was recorded") are marked "not shown". The status fact cannot be proven by the judge.
+- (Phase 5b) llama3.1:8b is unreliable and only partly reproducible: judge_agreement 0.92-0.96 (case01), 0.80 (case02); JUDGE_DISAGREE 4 / 12 sentences; ~60 sentences per run where the judge's own verdict differs from the code-derived one. Seed 43 at temperature 0 gives little independence.
+- (Phase 5b) Facts narration is thin and repetitive ("An event in this stage was logged at T"), fact coverage only 0.48-0.50; case01 lateral_movement ended with a single "Events were logged from..." sentence. Facts runs are near-identical across the 3 repeats (temperature 0 / fixed seed), so min/max show little variance; case02 was identical in all three.
+- (Phase 5b) Corruption: fabricated_entity missed 2/8 per run on case01 (persistence/brute_force sentence + invented path); fabricated_claim_no_entity missed 1/8 on case01, 0 on case02. False rejection of clean controls 1/12 (case01, JUDGE_PARTIAL on a sudo command) and 1/15 (case02, JUDGE_QUOTE_INVALID + DISAGREE).
+- (Phase 5b) Library default narration mode is raw; only the CLI defaults to facts.
 - (Phase 5, measured) The 7B narrator mostly IGNORES repair feedback at temperature 0: identical or near-identical sentences come back, so repair rounds recover little (case01: 3/10 -> 4/10 accepted; 3 of 7 units ended as template fallbacks). Many rejections are the semantic layer (e.g. a claim about failed logins in a stage whose allowed events are only the success event) - the narrator cannot satisfy them by citing differently.
 - Normalization is lossy: stripping a quote run also deleted a command's legitimate closing quote, and removing inline IDs can leave dangling phrases ("... as shown by.") that the judge still accepts (seen in the case02 executive summary).
 - The judge (llama3.1:8b) is unreliable for appended claims with no checkable entity: in the first live run it accepted 4/4 `fabricated_claim_no_entity` corruptions, in an identical second run it caught 2/4 (Ollama output was not reproducible across runs even at temperature 0, seed 42). Deterministic layers cannot catch entity-free fabrications.
@@ -178,6 +195,14 @@ Every narrative sentence is either VERIFIED or visibly absent. The verifier neve
 - Live (narrator qwen2.5:7b-instruct, judge llama3.1:8b, num_ctx 16384): case01 chain verify 109.6s (round-0 judge 12.6s, repair narrator 42.5s+39.6s, judge 7.2s+7.6s, 4 model swaps, 12 repair narrator calls), accepted/total 3/10 before repair -> 4/10 after, fallbacks brute_force/web_recon/executive_summary; baseline verification 2/10 (0.333 excluding cap-only), entity coverage baseline 1/4 vs chain 4/4; corruption 25/27 caught (22 deterministic, 3 judge), 2 missed, false rejection 0/4, corruption phase 28s. case02 chain verify 149.9s: 5/14 -> 7/15, fallbacks brute_force/lateral_movement.
 - Decisions: executive summary shares the repair rounds with the stages (fewer model swaps); fallback sentences skip the semantic layer; sentences of non-best attempts are labelled dropped; IP-like needs >=3 dotted groups; USER heuristics fixed after the first live run showed false positives ('recorded', 'suggest').
 - Problems: first live run: `USER_NOT_GROUNDED` false positives -> general suffix/stoplist fix; judge not reproducible run to run; fake-narrator tests initially returned unparsed replies and shared event IDs across cases (test harness bugs, fixed).
+
+
+### Phase 5b — 2026-10-28
+- Built: see "Phase 5b" section (facts.py, runmeta.py, verifier/runner.py, ClaimJudge, sentence-level repair, `--repeat`, tests/test_phase5b.py with 29 fake-only tests).
+- Tests: 169 passed.
+- Live (qwen2.5:7b-instruct + llama3.1:8b, num_ctx 16384): case01 facts x3: attempt-0 supported 0.40 (0.38-0.43), final accepted 14.7 (14-15), 0 fallback units, fixed by repair 3.7, ~1525 s/run; raw 1 run: 0.10 -> 2 accepted, 5 fallback units, 300 s. case02 facts x3: 0.30 -> 15 accepted (all runs), 0 fallbacks, ~974 s; raw: 0.21 -> 6 accepted, 1 fallback, 520 s. Corruption (facts, x3, cap 70 reached): case01 catch 0.957, case02 1.000; false rejection 0.083 / 0.067.
+- Decisions: judge quotes may come from the ISO timestamp field (syslog lines lack the year); facts rewritten to be self-provable after smoke runs accepted 1/27; narrative staleness check rebuilds facts.
+- Problems: one judge call took 1817 s (now timeout 300); stale narrative reused in smoke #2; stale events.jsonl (pipeline_meta.json fix); broad process kill was blocked, used TaskStop only.
 
 ## How to run (Windows PowerShell)
 ```powershell

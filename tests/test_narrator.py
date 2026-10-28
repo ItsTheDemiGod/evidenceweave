@@ -354,7 +354,7 @@ def test_cli_narrate_runs_pipeline_first(tmp_path, monkeypatch, prepared):
     made = []
     monkeypatch.setattr(llm_mod, "OllamaClient", lambda model, num_ctx: made.append((model, num_ctx)) or FakeLLM(num_ctx=num_ctx))
     cli.main(["narrate", "--case-dir", str(cases / "case01"), "--mode", "both", "--out", str(tmp_path),
-              "--num-ctx", "16384", "--chunk-size", "100", "--model", "llama3.1:8b"])
+              "--num-ctx", "16384", "--chunk-size", "100", "--model", "llama3.1:8b", "--narration-mode", "raw"])
     d = tmp_path / "case01"
     assert (d / "chain.json").exists() and (d / "events.jsonl").exists()
     assert (d / "narrative.json").exists() and (d / "baseline_narrative.json").exists()

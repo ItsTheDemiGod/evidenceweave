@@ -5,7 +5,7 @@ import random
 import re
 import time
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
 from ..narrator.narrate import now_iso, write_json
@@ -21,8 +21,12 @@ FAKE_NAMES = ["mallory", "oscar", "trent", "victor", "wendy", "peggy"]
 FAKE_ENTITY_CLAUSES = ["The attacker also sent data to 192.0.2.99.",
                        "The host then downloaded a tool from http://malware.example.net/tool.bin.",
                        "The attacker then stored a copy in /var/tmp/.cache_dump.tar."]
+# generic attack claims with no checkable entity (drawn with the seeded RNG)
 FAKE_CLAIMS = ["The attacker then deleted the audit logs.", "The attacker disabled the endpoint antivirus.",
-               "The attacker then cleared the shell history."]
+               "The attacker then cleared the event logs.", "The attacker exfiltrated the customer database.",
+               "The attacker then installed ransomware.", "The attacker escalated to domain administrator.",
+               "The attacker opened a reverse shell.", "The attacker modified the firewall rules.",
+               "The attacker then cleared the shell history.", "The attacker created a hidden administrator account."]
 
 
 @dataclass
@@ -31,6 +35,7 @@ class Base:
     index: int
     text: str
     cites: list
+    fact_ids: list = field(default_factory=list)
 
 
 @dataclass
@@ -48,9 +53,9 @@ def base_sentences(verified: dict) -> list[Base]:
     out = []
     for st in verified["stages"]:
         for i, s in enumerate(x for x in st["sentences"] if x["source"] == "llm"):
-            out.append(Base(st["stage"], i, s["text"], list(s["cites"])))
+            out.append(Base(st["stage"], i, s["text"], list(s["cites"]), list(s.get("fact_ids", []))))
     for i, s in enumerate(x for x in verified["executive_summary"] if x["source"] == "llm"):
-        out.append(Base("executive_summary", i, s["text"], list(s["cites"])))
+        out.append(Base("executive_summary", i, s["text"], list(s["cites"]), list(s.get("fact_ids", []))))
     return out
 
 
@@ -190,7 +195,7 @@ def candidates(data: CaseData, bases: list[Base], seed: int = SEED) -> dict[str,
             r = gen(b, make_env(data, b), rng)
             if r and (r[0] != b.text or r[1] != b.cites):
                 out[t].append({"type": t, "unit": b.unit, "index": b.index, "original_text": b.text,
-                               "original_cites": b.cites, "text": r[0], "cites": r[1]})
+                               "original_cites": b.cites, "text": r[0], "cites": r[1], "fact_ids": b.fact_ids})
     return out
 
 
@@ -218,7 +223,8 @@ def classify(v) -> str:
     return "judge_error" if verdict == "judge_error" else "judge"
 
 
-def run_corruption(data: CaseData, verified: dict, judge, max_cites: int = 8, cap: int = CAP, progress=None) -> dict:
+def run_corruption(data: CaseData, verified: dict, judge, max_cites: int = 8, cap: int = CAP, progress=None,
+                   run_meta: dict | None = None) -> dict:
     t0 = time.time()
     use_judge = judge is not None
     verifier = Verifier(data.events, data.host_names, max_cites)
@@ -227,11 +233,11 @@ def run_corruption(data: CaseData, verified: dict, judge, max_cites: int = 8, ca
     samples = select(cands, cap)
     jobs = [("corrupt", s) for s in samples] + [("control", {"type": "control", "unit": b.unit, "index": b.index,
                                                             "original_text": b.text, "original_cites": b.cites,
-                                                            "text": b.text, "cites": b.cites}) for b in bases]
+                                                            "text": b.text, "cites": b.cites, "fact_ids": b.fact_ids}) for b in bases]
     results = []
     for kind, s in jobs:
         ctx = data.ctxs[s["unit"]]
-        v = verifier.det(ctx, s["text"], s["cites"], s["index"], 0, "llm", use_judge)
+        v = verifier.det(ctx, s["text"], s["cites"], s["index"], 0, "llm", use_judge, s.get("fact_ids"))
         results.append((kind, s, ctx, v))
     n = 0
     if use_judge:
@@ -269,8 +275,9 @@ def run_corruption(data: CaseData, verified: dict, judge, max_cites: int = 8, ca
     report = {
         "case_name": data.name, "mode": "corruption", "created_at": now_iso(), "seed": SEED, "cap": cap,
         "judge_mode": "with_judge" if use_judge else "deterministic_only (--no-judge)",
-        "judge_model": judge.model if use_judge else None, "max_cites": max_cites,
-        "base_sentences": len(bases), "per_type": per,
+        "judge_model": judge.model if use_judge else None, "judge_double": bool(use_judge and getattr(judge, "double", False)),
+        "max_cites": max_cites, "base_sentences": len(bases), "corrupted_samples": len(samples),
+        "controls_use_the_same_judge": True, "per_type": per,
         "overall": {"injected": inj, "caught": caught, "catch_rate": round(caught / inj, 4) if inj else None,
                     "caught_deterministic": sum(p["caught_deterministic"] for p in per.values()),
                     "caught_judge_only": sum(p["caught_judge_only"] for p in per.values()),
@@ -279,6 +286,7 @@ def run_corruption(data: CaseData, verified: dict, judge, max_cites: int = 8, ca
                     "false_rejection_rate": round(len(rej) / len(controls), 4) if controls else None,
                     "rejected_sentences": rej},
         "missed": missed, "samples": sample_out, "controls": controls,
-        "total_seconds": round(time.time() - t0, 2)}
+        "total_seconds": round(time.time() - t0, 2),
+        "run_metadata": run_meta if run_meta is not None else {"collected": False}}
     write_json(data.out_dir / "corruption_report.json", report)
     return report

@@ -202,11 +202,18 @@ class FJudgeLLM:
         self.handler, self.model, self.seq = handler, model, seq
         self.options, self.json_mode, self.calls = {"temperature": 0, "seed": 42, "num_ctx": 8192}, "schema", []
 
-    def complete(self, system, user):
+    def complete(self, system, user, options=None, schema=None, validator=None):
         self.calls.append(user)
         if self.seq is not None:
             self.seq.append("judge")
-        text = self.handler(user) if self.handler else '{"verdict": "supported", "reason": "shown"}'
+        if self.handler:
+            text = self.handler(user)
+        elif "distinct factual claims" in system:  # the claims judge: quote a real substring of the first shown log line
+            line = next((l for l in user.splitlines() if re.match(r"(?:AUTH|NGX|WIN)-L\d+ \| ", l)), "")
+            quote = line.split(" | ", 2)[2][:12] if line.count(" | ") >= 2 else ""
+            text = json.dumps({"claims": [{"claim": "c", "supported": True, "quote": quote}], "verdict": "supported", "reason": "shown"})
+        else:
+            text = '{"verdict": "supported", "reason": "shown"}'
         return LLMResult(True, text, None, 0.0, "schema")
 
 
@@ -271,7 +278,7 @@ class FNarr:
         self.handler, self.model, self.seq, self.calls = handler, model, seq, []
         self.options, self.json_mode = {"temperature": 0, "seed": 42, "num_ctx": 16384}, "schema"
 
-    def complete(self, system, user):
+    def complete(self, system, user, options=None, schema=None, validator=None):
         self.calls.append(user)
         if self.seq is not None:
             self.seq.append("narrator")
@@ -473,7 +480,7 @@ def test_defect_kinds_handled_by_the_intended_layer():
     assert codes(v, "entities") == [V.MALFORMED_IP] and codes(v, "structure") == []
     # trailing junk quote run
     v = vr.det(c, "At 02:25:05 deploy ran a command via sudo '/bin/bash -c 'curl x'''., ", ["AUTH-L3"], 0, 0, "llm", False)
-    assert v.text_normalized.endswith("curl x.") and v.layer_results["structure"]["passed"] is True
+    assert v.text_normalized.endswith("curl x''.")  # only the ONE excess quote is junk; the two legitimate closers stay and v.layer_results["structure"]["passed"] is True
     assert any(r["code"] == V.NORMALIZED for r in v.layer_results["structure"]["reasons"])
     # "privileged logon" claim citing only a plain logon
     v = vr.det(c, "The account made a successful privileged logon on ws1.", ["WIN-L4"], 0, 0, "llm", False)
@@ -630,7 +637,8 @@ def test_corruption_missed_are_listed_and_judge_catches(prepared, tmp_path):
     data, bases = corruption_env(prepared, tmp_path)
     verified = {"stages": [{"stage": b.unit, "sentences": [{"text": b.text, "cites": b.cites, "source": "llm", "attempt": 0}]}
                            for b in bases], "executive_summary": []}
-    strict = lambda u: '{"verdict":"unsupported","reason":"no"}' if "deleted" in u or "disabled" in u or "cleared" in u \
+    from evidenceweave.verifier.corruption import FAKE_CLAIMS
+    strict = lambda u: '{"verdict":"unsupported","reason":"no"}' if any(c in u for c in FAKE_CLAIMS) \
         else '{"verdict":"supported","reason":"ok"}'
     rep = run_corruption(data, verified, Judge(FJudgeLLM(strict)), cap=70)
     p = rep["per_type"]["fabricated_claim_no_entity"]
@@ -699,12 +707,14 @@ def test_ablation_block_with_judge(prepared, tmp_path):
 
 # ================= CLI wiring =================
 def test_cli_verify_all_with_fakes(prepared, tmp_path, monkeypatch):
-    def factory(model, num_ctx=8192, schema=None, validator=None):
+    def factory(model, num_ctx=8192, schema=None, validator=None, **kw):
         return FJudgeLLM(None, model) if schema is not None else FNarr(None, model)
 
     monkeypatch.setattr(llm_mod, "OllamaClient", factory)
+    EVS.clear()
+    EVS.update(load_events(prepared / "out" / "case01" / "events.jsonl"))
     cli.main(["verify", "--case-dir", str(prepared / "cases" / "case01"), "--mode", "all", "--out", str(tmp_path),
-              "--model", "narr", "--judge-model", "jdg", "--chunk-size", "120"])
+              "--model", "narr", "--judge-model", "jdg", "--chunk-size", "120", "--narration-mode", "raw"])
     d = tmp_path / "case01"
     for f in ("narrative.json", "narrative_verified.json", "verification_report.json", "baseline_narrative.json",
               "baseline_verification.json", "corruption_report.json"):
@@ -712,5 +722,5 @@ def test_cli_verify_all_with_fakes(prepared, tmp_path, monkeypatch):
     ver = json.loads((d / "narrative_verified.json").read_text())["verification"]
     assert ver["narrator_model"] == "narr" and ver["judge_model"] == "jdg" and ver["judge_independent"]
     cli.main(["verify", "--case-dir", str(prepared / "cases" / "case01"), "--mode", "chain", "--out", str(tmp_path),
-              "--model", "narr", "--no-judge"])
+              "--model", "narr", "--no-judge", "--narration-mode", "raw"])
     assert json.loads((d / "verification_report.json").read_text())["verification"]["judge_mode"].startswith("deterministic_only")

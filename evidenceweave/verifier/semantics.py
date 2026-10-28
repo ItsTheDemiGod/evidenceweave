@@ -26,7 +26,7 @@ CLAIM_TABLE = [
      frozenset({S.CRON_COMMAND, S.CRON_SESSION_OPENED, S.CRON_SESSION_CLOSED})),
     ("sudo", re.compile(r"\bsudo\b", _I), frozenset({S.SUDO_COMMAND})),
     ("process/command", re.compile(r"powershell|\bprocess(?:es)?\b|executed|ran a command|runs? (?:a )?command", _I),
-     frozenset({S.WIN_PROCESS_CREATED, S.SUDO_COMMAND, S.CRON_COMMAND})),
+     frozenset({S.WIN_PROCESS_CREATED, S.SUDO_COMMAND, S.CRON_COMMAND, S.WIN_TASK_CREATED})),  # a task runs a command
     ("web request", re.compile(r"web request|scann|probe|probing|\b404\b|\b403\b|\bHTTP\b", _I),
      frozenset({S.WEB_REQUEST})),
     ("session", re.compile(r"session (?:opened|closed)|opened a session|closed the session", _I),

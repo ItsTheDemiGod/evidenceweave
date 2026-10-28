@@ -8,7 +8,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from . import prompts as P
-from .llm import LLMClient, call_json, safe_name
+from . import facts as F
+from .llm import FACT_SENTENCES_SCHEMA, LLMClient, call_json, parse_fact_sentences, safe_name
 from .packs import MAX_RAW_CHARS, build_packs, load_events
 
 
@@ -17,6 +18,8 @@ class NarratorConfig:
     max_evidence_per_stage: int = 12
     max_raw_chars: int = MAX_RAW_CHARS
     chunk_size: int = 120  # baseline only
+    mode: str = "raw"  # raw = Phase 4 raw-evidence prompts (library default); the CLI default is facts
+    max_facts: int = 8  # facts mode: facts per stage
 
 
 def now_iso() -> str:
@@ -80,8 +83,8 @@ def with_feedback(user: str, feedback: str | None) -> str:
     return user if not feedback else user + FEEDBACK_HEADER + feedback + FEEDBACK_FOOTER
 
 
-def narrate_stage(client: LLMClient, pack, feedback: str | None = None):
-    return call_json(client, P.STAGE_SYSTEM, with_feedback(P.stage_prompt(pack), feedback))
+def narrate_stage(client: LLMClient, pack, feedback: str | None = None, options: dict | None = None):
+    return call_json(client, P.STAGE_SYSTEM, with_feedback(P.stage_prompt(pack), feedback), options=options)
 
 
 def summary_info(packs) -> list[dict]:
@@ -90,8 +93,24 @@ def summary_info(packs) -> list[dict]:
              "cite_ids": list(dict.fromkeys([p.allowed_cite_ids[0], p.allowed_cite_ids[-1]]))} for p in packs]
 
 
-def narrate_summary(client: LLMClient, info: list[dict], feedback: str | None = None):
-    return call_json(client, P.SUMMARY_SYSTEM, with_feedback(P.summary_prompt(info), feedback))
+def narrate_summary(client: LLMClient, info: list[dict], feedback: str | None = None, options: dict | None = None):
+    return call_json(client, P.SUMMARY_SYSTEM, with_feedback(P.summary_prompt(info), feedback), options=options)
+
+
+def narrate_stage_facts(client: LLMClient, stage: str, status: str, facts: list[dict], allowed: list[str],
+                        suffix: str = "", options: dict | None = None):
+    """Facts mode stage call. suffix = repair instructions (sentence-level feedback); options = repair temperature/seed."""
+    return call_json(client, P.FACTS_STAGE_SYSTEM, P.facts_stage_prompt(stage, status, facts, allowed) + suffix,
+                     options=options, schema=FACT_SENTENCES_SCHEMA, validator=parse_fact_sentences)
+
+
+def summary_facts_info(chain: dict, facts_by_stage: dict) -> list[dict]:
+    return [{"stage": st["stage"], "status": st["status"], "facts": facts_by_stage[st["stage"]][:2]} for st in chain["stages"]]
+
+
+def narrate_summary_facts(client: LLMClient, info: list[dict], suffix: str = "", options: dict | None = None):
+    return call_json(client, P.FACTS_SUMMARY_SYSTEM, P.facts_summary_prompt(info) + suffix, options=options,
+                     schema=FACT_SENTENCES_SCHEMA, validator=parse_fact_sentences)
 
 
 def _progress(cb, msg: str) -> None:
@@ -99,13 +118,16 @@ def _progress(cb, msg: str) -> None:
         cb(msg)
 
 
-def narrate_chain(case_output_dir, client: LLMClient, config: NarratorConfig | None = None, progress=None) -> dict:
+def narrate_chain(case_output_dir, client: LLMClient, config: NarratorConfig | None = None, progress=None,
+                  run_meta: dict | None = None) -> dict:
     cfg = config or NarratorConfig()
     d = Path(case_output_dir)
     chain = json.loads((d / "chain.json").read_text(encoding="utf-8"))
     findings = json.loads((d / "findings.json").read_text(encoding="utf-8"))["findings"]
     events = load_events(d / "events.jsonl")
     packs = build_packs(chain, findings, events, cfg.max_evidence_per_stage, cfg.max_raw_chars)
+    facts_mode = cfg.mode == "facts"
+    facts_by_stage = F.build_facts(chain, findings, events, cfg.max_facts) if facts_mode else {}
     t_all, stats = time.time(), {"calls": 0, "failed_parses": 0, "retries": 0, "tokens": None}
 
     def run(name: str, call) -> tuple:
@@ -121,27 +143,49 @@ def narrate_chain(case_output_dir, client: LLMClient, config: NarratorConfig | N
 
     stage_out = []
     for p in packs:
+        if facts_mode:
+            fl = facts_by_stage[p.stage]
+            allowed_stage = F.allowed_ids(fl, events)
+            rec, raw = run(p.stage, lambda p=p, fl=fl, a=allowed_stage: narrate_stage_facts(client, p.stage, p.status, fl, a))
+            stage_out.append({
+                "stage": p.stage, "status": p.status, "source": "llm",
+                "sentences": rec.parsed["sentences"] if rec.parsed else [], "parse_ok": rec.parsed is not None,
+                "attempts": rec.attempts, "seconds": round(rec.seconds, 2), "facts": fl,
+                "evidence_shown": len(allowed_stage), "evidence_total": p.evidence_total,
+                "allowed_cite_ids": allowed_stage, "raw_output_file": raw})
+            continue
         rec, raw = run(p.stage, lambda p=p: narrate_stage(client, p))
         stage_out.append({
             "stage": p.stage, "status": p.status, "source": "llm",
             "sentences": rec.parsed["sentences"] if rec.parsed else [], "parse_ok": rec.parsed is not None,
             "attempts": rec.attempts, "seconds": round(rec.seconds, 2), "evidence_shown": p.evidence_shown,
             "evidence_total": p.evidence_total, "allowed_cite_ids": p.allowed_cite_ids, "raw_output_file": raw})
-    info = summary_info(packs)
-    rec, raw = run("executive_summary", lambda: narrate_summary(client, info))
-    allowed = list(dict.fromkeys(i for s in info for i in s["cite_ids"]))
+    if facts_mode:
+        info = summary_facts_info(chain, facts_by_stage)
+        rec, raw = run("executive_summary", lambda: narrate_summary_facts(client, info))
+        shown = [f for s in info for f in s["facts"]]
+        allowed = list(dict.fromkeys(c for f in shown for c in f["cites"]))
+        meta_extra = {"facts": shown}
+    else:
+        info = summary_info(packs)
+        rec, raw = run("executive_summary", lambda: narrate_summary(client, info))
+        allowed = list(dict.fromkeys(i for s in info for i in s["cite_ids"]))
+        meta_extra = {}
     attempts_only, unprovable = template_sections(chain, findings, events)
     out = {
-        "case_name": chain["case_name"], "mode": "chain", "model": client.model, "prompt_version": P.PROMPT_VERSION,
+        "case_name": chain["case_name"], "mode": "chain", "model": client.model,
+        "prompt_version": P.PROMPT_VERSION_FACTS if facts_mode else P.PROMPT_VERSION,
+        "narration_mode": cfg.mode, "max_facts_per_stage": cfg.max_facts if facts_mode else None,
         "ollama_options": client.options, "json_mode": client.json_mode,
         "total_seconds": round(time.time() - t_all, 2), "created_at": now_iso(),
         "max_evidence_per_stage": cfg.max_evidence_per_stage,
         "executive_summary": rec.parsed["sentences"] if rec.parsed else [],
         "executive_summary_meta": {"parse_ok": rec.parsed is not None, "attempts": rec.attempts,
                                    "seconds": round(rec.seconds, 2), "allowed_cite_ids": allowed,
-                                   "raw_output_file": raw},
+                                   "raw_output_file": raw, **meta_extra},
         "stages": stage_out, "attempts_only": attempts_only, "unprovable": unprovable,
         "stats": {"calls": stats["calls"], "failed_parses": stats["failed_parses"], "retries": stats["retries"],
-                  "total_tokens": stats["tokens"]}}
+                  "total_tokens": stats["tokens"]},
+        "run_metadata": run_meta if run_meta is not None else {"collected": False}}
     write_json(d / "narrative.json", out)
     return out

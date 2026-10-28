@@ -9,10 +9,13 @@ MALFORMED_IP, IP_NOT_GROUNDED, TIME_NOT_GROUNDED = "MALFORMED_IP", "IP_NOT_GROUN
 NUMBER_NOT_GROUNDED, URL_NOT_GROUNDED, USER_NOT_GROUNDED = "NUMBER_NOT_GROUNDED", "URL_NOT_GROUNDED", "USER_NOT_GROUNDED"
 HOST_NOT_GROUNDED, COMMAND_NOT_GROUNDED, SEMANTIC_MISMATCH = "HOST_NOT_GROUNDED", "COMMAND_NOT_GROUNDED", "SEMANTIC_MISMATCH"
 JUDGE_UNSUPPORTED, JUDGE_PARTIAL, JUDGE_ERROR = "JUDGE_UNSUPPORTED", "JUDGE_PARTIAL", "JUDGE_ERROR"
+DANGLING_ENDING = "DANGLING_ENDING"
+FACT_ID_UNKNOWN, CITES_NOT_FROM_FACTS, NO_FACT_REFERENCE = "FACT_ID_UNKNOWN", "CITES_NOT_FROM_FACTS", "NO_FACT_REFERENCE"
+JUDGE_QUOTE_INVALID, JUDGE_DISAGREE = "JUDGE_QUOTE_INVALID", "JUDGE_DISAGREE"
 NORMALIZED = "NORMALIZED"  # informational only, never a failure
 
-LAYERS = ("structure", "entities", "semantics", "judge")
-DET_LAYERS = ("structure", "entities", "semantics")
+LAYERS = ("structure", "facts", "entities", "semantics", "judge")
+DET_LAYERS = ("structure", "facts", "entities", "semantics")
 
 WORDS = {
     EMPTY_TEXT: "the sentence was empty",
@@ -33,6 +36,12 @@ WORDS = {
     JUDGE_UNSUPPORTED: "an independent checker found it contradicted or not shown by the cited log lines",
     JUDGE_PARTIAL: "an independent checker found part of it unsupported by the cited log lines",
     JUDGE_ERROR: "the independent checker could not evaluate it",
+    DANGLING_ENDING: "the sentence ends in a connector word or opening bracket (it looks cut off)",
+    FACT_ID_UNKNOWN: "it references a fact_id that is not one of this stage's facts",
+    CITES_NOT_FROM_FACTS: "its cites are not a subset of the cites of the facts it references (copy the facts' cites)",
+    NO_FACT_REFERENCE: "it lists no fact_ids (every sentence must say which facts it is based on)",
+    JUDGE_QUOTE_INVALID: "the checker's supporting quote for a claim does not appear in the cited log lines",
+    JUDGE_DISAGREE: "two independent checks of the sentence reached different verdicts",
 }
 
 
@@ -47,6 +56,7 @@ class SentenceVerdict:
     text_normalized: str
     cites_original: list
     cites_final: list
+    fact_ids: list = field(default_factory=list)
     layer_results: dict = field(default_factory=dict)  # layer -> {passed: true|false|"skipped", reasons: [{code, detail}]}
     judge: dict | None = None  # {model, verdict, reason, seconds}
     accepted: bool = False

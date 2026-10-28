@@ -11,7 +11,7 @@ from .verdicts import LAYERS
 from .verify import CaseData, UnitCtx, Verifier, entity_coverage, needs_judge, rates
 
 
-def verify_baseline(data: CaseData, judge, max_cites: int = 8, progress=None) -> dict:
+def verify_baseline(data: CaseData, judge, max_cites: int = 8, progress=None, run_meta: dict | None = None) -> dict:
     t0 = time.time()
     bl = json.loads((data.out_dir / "baseline_narrative.json").read_text(encoding="utf-8"))
     use_judge = judge is not None
@@ -37,7 +37,8 @@ def verify_baseline(data: CaseData, judge, max_cites: int = 8, progress=None) ->
         "layer_pass_counts": {l: dict(Counter(str(v.layer_results.get(l, {}).get("passed")) for v in vs)) for l in LAYERS},
         "judge_verdict_counts": dict(Counter(v.judge["verdict"] for v in vs if v.judge)),
         "sentences_reaching_judge": n, "entity_coverage": {"baseline": cov_b},
-        "verdicts": [v.to_dict() for v in vs]}
+        "verdicts": [v.to_dict() for v in vs],
+        "run_metadata": run_meta if run_meta is not None else {"collected": False}}
     vpath = data.out_dir / "narrative_verified.json"
     rpath = data.out_dir / "verification_report.json"
     if vpath.exists() and rpath.exists():  # the same two numbers + coverage for the chain narrator

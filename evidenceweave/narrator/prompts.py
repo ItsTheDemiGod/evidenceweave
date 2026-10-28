@@ -76,3 +76,46 @@ def baseline_final_prompt(notes: list[dict]) -> str:
     lines.append("Write the 6 to 12 sentence chronological incident narrative as the JSON object only, "
                  "citing only event IDs that appear in the notes above.")
     return "\n".join(lines)
+
+
+# ---------------- facts mode (Phase 5b). The raw-evidence prompts above are untouched. ----------------
+PROMPT_VERSION_FACTS = "p5b-facts-v1"
+
+FACTS_RULES = """Rules (follow every one strictly):
+1. Rewrite the facts into clear plain-English prose, ONE sentence per fact (you may join at most two adjacent facts into one sentence).
+2. Do not add any information, number, time, entity or cause that is not in the facts. Do not speculate or interpret.
+3. Keep every IP address, time, user name and command exactly as written in the facts.
+4. For every sentence list the fact_ids it used in "fact_ids" and copy the cites of those facts into "cites" (cites must be a subset of the union of the cites of the facts you used). Never cite anything else.
+5. Do not write fact ids or event ids inside the sentence text, and do not mention these rules.
+Reply with ONLY a JSON object of the form {"sentences": [{"text": "...", "fact_ids": ["FACT_ID"], "cites": ["EVENT_ID"]}]} and nothing else."""
+
+FACTS_STAGE_SYSTEM = ("You are a digital-forensics report writer. A deterministic analysis already produced the numbered facts "
+                      "you are given; you only rewrite them into prose. You do not decide or add anything.\n\n" + FACTS_RULES)
+FACTS_SUMMARY_SYSTEM = ("You are a digital-forensics report writer. A deterministic analysis already produced the facts of every "
+                        "attack stage; you write a 3 to 5 sentence executive summary of the whole chain, in order, using only "
+                        "those facts. Each sentence may combine facts of neighbouring stages.\n\n" + FACTS_RULES)
+
+
+def _fact_line(f: dict) -> str:
+    return f"[{f['fact_id']}] {f['text']} | cites: {', '.join(f['cites'])}"
+
+
+def facts_stage_prompt(stage: str, status: str, facts: list[dict], allowed: list[str]) -> str:
+    lines = [f"STAGE: {stage}", f"STATUS: {status}", "FACTS (each with the event IDs that prove it):"]
+    lines += [_fact_line(f) for f in facts]
+    lines.append("ALLOWED CITE IDS: " + ", ".join(allowed))
+    lines.append("Write the prose now: one sentence per fact (at most two facts per sentence), as the JSON object only.")
+    return "\n".join(lines)
+
+
+def facts_summary_prompt(stages: list[dict]) -> str:
+    """stages: [{stage, status, facts: [first two facts]}] in chronological order."""
+    lines = ["ATTACK CHAIN, IN ORDER (the first two facts of each stage):"]
+    allowed = []
+    for i, s in enumerate(stages, 1):
+        lines.append(f"{i}. {s['stage']} | status: {s['status']}")
+        lines += [f"   {_fact_line(f)}" for f in s["facts"]]
+        allowed += [c for f in s["facts"] for c in f["cites"]]
+    lines.append("ALLOWED CITE IDS: " + ", ".join(dict.fromkeys(allowed)))
+    lines.append("Write the 3 to 5 sentence executive summary of the whole chain now, as the JSON object only.")
+    return "\n".join(lines)
