@@ -6,7 +6,16 @@ from pathlib import Path
 
 from .config import DATA_DIR, OUTPUT_DIR
 
-PHASES = {"evaluate": 6}
+PHASES = {}
+
+
+def cmd_evaluate(argv) -> None:
+    """Delegate to scripts/evaluate_cases.py (the only code allowed to read the answer key)."""
+    import subprocess
+    import sys
+
+    script = Path(__file__).resolve().parent.parent / "scripts" / "evaluate_cases.py"
+    raise SystemExit(subprocess.call([sys.executable, str(script), *argv]))
 OVERRIDES = {"cross_host_tolerance_seconds": ["--tolerance-seconds"]}  # extra CLI spellings
 
 
@@ -241,7 +250,8 @@ def cmd_verify(args) -> None:
             data = load_case_data(out, hosts)
             verified = json.loads((out / "narrative_verified.json").read_text(encoding="utf-8"))
             print("corruption test:")
-            c = run_corruption(data, verified, judge, args.max_cites, progress=print, run_meta=meta)
+            c = run_corruption(data, verified, judge, args.max_cites, cap=args.corruption_cap, progress=print,
+                               run_meta=meta, pool=args.pool)
             print(f"  {c['base_sentences']} clean base sentences, {c['corrupted_samples']} corrupted samples (cap {c['cap']})")
             for t, p in c["per_type"].items():
                 print(f"  {t:28} injected={p['injected']:2} det={p['caught_deterministic']:2} judge={p['caught_judge_only']:2} "
@@ -313,6 +323,8 @@ def main(argv=None):
     v.add_argument("--narration-mode", choices=["facts", "raw"], default="facts")
     v.add_argument("--max-facts-per-stage", type=int, default=8)
     v.add_argument("--single-judge", action="store_true", help="judge each sentence once instead of twice (ablation)")
+    v.add_argument("--pool", choices=["original", "heldout"], default="original", help="corruption pool (corruption mode)")
+    v.add_argument("--corruption-cap", type=int, default=70, help="max injected samples (corruption mode)")
     v.add_argument("--repeat", type=int, metavar="N", help="N independent full passes (chain or corruption mode)")
     v.add_argument("--repair-temperature", type=float, default=0.3)
     v.add_argument("--out", default=str(OUTPUT_DIR))
@@ -341,8 +353,12 @@ def main(argv=None):
     r.add_argument("--out", default=str(OUTPUT_DIR))
     r.add_argument("--no-open", action="store_true")
     r.set_defaults(func=lambda args: __import__("evidenceweave.analyze", fromlist=["x"]).cmd_report(args))
-    for name in PHASES:
-        sub.add_parser(name, help=f"{name} (placeholder)")
+    sub.add_parser("evaluate", help="Phase 6b evaluation harness (arguments are passed to scripts/evaluate_cases.py)")
+    if argv is None:
+        import sys
+        argv = sys.argv[1:]
+    if argv and argv[0] == "evaluate":
+        return cmd_evaluate(argv[1:])
     args = p.parse_args(argv)
     if hasattr(args, "func"):
         args.func(args)

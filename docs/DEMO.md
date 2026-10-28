@@ -33,11 +33,11 @@
 
 ## Likely questions
 
-1. **Why not let the LLM do everything?** It would invent details, and a 7B model cannot hold thousands of log lines. Rules find the attack; the LLM only rewrites facts. A naive chunked baseline we ran covered fewer attacker entities and was far less supported.
+1. **Why not let the LLM do everything?** It would invent details, and a 7B model cannot hold thousands of log lines. Rules find the attack; the LLM only rewrites facts. A naive chunked baseline was also evaluated; the measured comparison is in docs/RESULTS.md.
 2. **How do you know it is correct?** The chain is scored against a synthetic answer key (precision/recall per step); every narrative sentence is checked against the cited log lines. We have not checked it on real logs.
 3. **Is the data real?** No. All logs are synthetic with a planted attack and known ground truth; the report footer says so.
 4. **What does the judge add?** Deterministic checks catch wrong entities. The judge (a different model) catches claims that use correct entities but say something the cited lines do not show. It must quote the log line; the quote is matched exactly.
-5. **What happens when the judge is wrong?** It is imperfect and not fully reproducible (agreement 0.8-0.96 between its two runs). We double-judge, require exact quotes, treat disagreement as rejection, and measure false rejections and misses with a corruption test. A sentence with no checkable entity can still slip through.
+5. **What happens when the judge is wrong?** It is imperfect and not fully reproducible (its two runs do not always agree; see docs/RESULTS.md). We double-judge, require exact quotes, treat disagreement as rejection, and measure false rejections and misses with a corruption test. A sentence with no checkable entity can still slip through.
 6. **Why 7B local models?** Free, private (logs never leave the machine), reproducible. The cost is plain prose, which is acceptable because facts come from rules.
 7. **What is the clock-offset story?** Windows hosts can have a skewed clock. We never estimate skew automatically; you pass `--clock-offset HOST=SECONDS`. Cross-host links use a tolerance (default 300 s). The report shows the offsets applied.
 8. **What would you do next?** Real-world logs, more sources, held-out corruption tests, a manual audit of the report text, and a stronger narrator.
@@ -46,6 +46,8 @@
 11. **Why can the same run give slightly different results?** Local models are only partly deterministic even at temperature 0 and a fixed seed; the run metadata (model digests, Ollama version, options) is stored with every output.
 12. **What does "unprovable" mean here?** The logs show an effect (a cron job as svc_backup) but not the cause (the account creation). Absence of evidence is not proof of absence, so the report says what is missing.
 
-## Results (filled in Phase 6b)
+## Results
 
-_Placeholder: the multi-case evaluation, held-out corruption pool and manual audit are Phase 6b. No numbers are claimed here yet._
+<!-- RESULTS:START -->
+_Placeholder: filled by `scripts/make_results.py` from `eval/results.json`. See docs/RESULTS.md._
+<!-- RESULTS:END -->

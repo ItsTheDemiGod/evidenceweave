@@ -10,6 +10,8 @@ from datetime import datetime, timedelta
 
 from ..narrator.narrate import now_iso, write_json
 from .entities import HMS_RE, ISO_RE, build_pool, extract, norm_iso
+from .corruption_pools import (HELDOUT_ENTITY_FABRICATIONS, HELDOUT_ENTITY_KINDS, HELDOUT_NO_ENTITY_CLAIMS,
+                               pool_sha256)
 from .structure import id_key
 from .verify import UnitCtx, Verifier, needs_judge, CaseData
 
@@ -214,6 +216,34 @@ def select(cands: dict[str, list[dict]], cap: int = CAP, seed: int = SEED) -> li
     return sorted(picked, key=lambda s: (TYPES.index(s["type"]), s["unit"], s["index"]))
 
 
+POOL_TYPES = ("fabricated_entity", "fabricated_claim_no_entity")
+
+
+def pool_info(pool: str) -> dict:
+    if pool == "heldout":
+        return {"name": "heldout", "sha256": pool_sha256(HELDOUT_NO_ENTITY_CLAIMS, HELDOUT_ENTITY_FABRICATIONS)}
+    return {"name": "original", "sha256": pool_sha256(FAKE_CLAIMS, FAKE_ENTITY_CLAUSES)}
+
+
+def apply_heldout(samples: list[dict], seed: int = SEED) -> None:
+    """Rewrite the two pool-drawn types in place: seeded permutation, each entry once before any is reused."""
+    for t, entries in (("fabricated_entity", HELDOUT_ENTITY_FABRICATIONS), ("fabricated_claim_no_entity", HELDOUT_NO_ENTITY_CLAIMS)):
+        rng = random.Random(f"{seed}/heldout/{t}")
+        order = []
+        for s in (x for x in samples if x["type"] == t):
+            if not order:
+                order = list(entries)
+                rng.shuffle(order)
+            e = order.pop()
+            base = s["original_text"].rstrip()
+            if t == "fabricated_entity":
+                s["text"] = base.rstrip(".") + e + "."
+                s["entity_kind"] = HELDOUT_ENTITY_KINDS[e]
+            else:
+                s["text"] = f"{base} {e}"
+            s["pool_entry"] = e
+
+
 def classify(v) -> str:
     if v.accepted:
         return "missed"
@@ -224,13 +254,15 @@ def classify(v) -> str:
 
 
 def run_corruption(data: CaseData, verified: dict, judge, max_cites: int = 8, cap: int = CAP, progress=None,
-                   run_meta: dict | None = None) -> dict:
+                   run_meta: dict | None = None, pool: str = "original") -> dict:
     t0 = time.time()
     use_judge = judge is not None
     verifier = Verifier(data.events, data.host_names, max_cites)
     bases = base_sentences(verified)
     cands = candidates(data, bases)
     samples = select(cands, cap)
+    if pool == "heldout":
+        apply_heldout(samples)
     jobs = [("corrupt", s) for s in samples] + [("control", {"type": "control", "unit": b.unit, "index": b.index,
                                                             "original_text": b.text, "original_cites": b.cites,
                                                             "text": b.text, "cites": b.cites, "fact_ids": b.fact_ids}) for b in bases]
@@ -263,7 +295,8 @@ def run_corruption(data: CaseData, verified: dict, judge, max_cites: int = 8, ca
             if how == "missed":
                 missed.append({"type": s["type"], "unit": s["unit"], "original_text": s["original_text"],
                                "corrupted_text": s["text"], "original_cites": s["original_cites"],
-                               "corrupted_cites": s["cites"], "judge": v.judge})
+                               "corrupted_cites": s["cites"], "judge": v.judge,
+                               "entity_kind": s.get("entity_kind")})
         else:
             controls.append(rec)
     for p in per.values():
@@ -273,7 +306,7 @@ def run_corruption(data: CaseData, verified: dict, judge, max_cites: int = 8, ca
     caught = sum(p["caught_deterministic"] + p["caught_judge_only"] + p["caught_judge_error"] for p in per.values())
     rej = [c for c in controls if c["rejected"]]
     report = {
-        "case_name": data.name, "mode": "corruption", "created_at": now_iso(), "seed": SEED, "cap": cap,
+        "case_name": data.name, "mode": "corruption", "created_at": now_iso(), "seed": SEED, "cap": cap, "pool": pool_info(pool),
         "judge_mode": "with_judge" if use_judge else "deterministic_only (--no-judge)",
         "judge_model": judge.model if use_judge else None, "judge_double": bool(use_judge and getattr(judge, "double", False)),
         "max_cites": max_cites, "base_sentences": len(bases), "corrupted_samples": len(samples),

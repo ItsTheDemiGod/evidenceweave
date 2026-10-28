@@ -108,3 +108,7 @@ tests/         pytest suite (fakes only, no real Ollama)
 .\.venv\Scripts\Activate.ps1
 python -m pytest            # no test calls Ollama
 ```
+
+## Evaluation
+
+Measured results (all arms, held-out corruption test, manual audit): see [docs/RESULTS.md](docs/RESULTS.md).
