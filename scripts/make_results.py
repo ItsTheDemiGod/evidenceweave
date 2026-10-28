@@ -206,24 +206,38 @@ def t6(tables):
     return "\n".join(L)
 
 
-def t7(audit):
-    L = ["## Table 7 - Manual audit (single labeller)\n"]
-    if not audit:
-        return "\n".join(L) + "audit pending\n"
-    if audit.get("refused"):
-        return "\n".join(L) + f"audit pending ({audit['reason']})\n"
+def audit_body(audit):
     cm = audit["confusion_matrix"]
-    L.append(table(["verifier", "S", "P", "U"], [[k, v["S"], v["P"], v["U"]] for k, v in cm.items()]))
-    L.append(f"- Labelled {audit['items_labelled']}/{audit['items_total']} items. **Single labeller, no agreement measured.**")
+    L = [table(["verifier", "S", "P", "U"], [[k, v["S"], v["P"], v["U"]] for k, v in cm.items()])]
+    L.append(f"- Labelled {audit['items_labelled']}/{audit['items_total']} items.")
     L.append(f"- Accepted sentences labelled S: {ci(audit['precision_accepted_S'])}")
     L.append(f"- Accepted sentences labelled S or P: {ci(audit['precision_accepted_S_or_P'])}")
-    L.append(f"- Rejected sentences the human labelled S (false rejections): {ci(audit['false_rejection_rate'])}")
+    L.append(f"- Rejected sentences labelled S (false rejections): {ci(audit['false_rejection_rate'])}")
     for f in audit["false_rejections"]:
         L.append(f"  - {f['item_id']} [{f['failure_codes']}]: {f['sentence']}")
     L.append(f"\nAccepted sentences labelled P or U (verifier misses): {len(audit['verifier_misses'])}")
     for m in audit["verifier_misses"]:
         L.append(f"- {m['item_id']} ({m['label']}, {m['case']}/{m['stage']}): {m['sentence']}")
     return "\n".join(L) + "\n"
+
+
+LLM_NOTE = ("> **The 32 labels below were produced by an LLM from the same model family as the narrator. No human labelled them. "
+            "The labeller saw only `audit_items.csv` (never `audit_key.csv`) before labelling. The results are indicative only "
+            "and are not independent ground truth.**\n")
+
+
+def t7(audit, llm=None):
+    def usable(a):
+        return a and not a.get("refused")
+    if usable(audit):
+        L = ["## Table 7 - Manual audit (single human labeller)\n", audit_body(audit)]
+        if usable(llm):
+            L += ["### Second opinion: LLM-labelled audit (not independent ground truth)\n", LLM_NOTE, audit_body(llm)]
+        return "\n".join(L)
+    if usable(llm):
+        return "\n".join(["## Table 7 - LLM-labelled audit (not independent ground truth)\n", LLM_NOTE, audit_body(llm),
+                          "Human audit: pending (`eval/audit/audit_scores.json` not present).\n"])
+    return "## Table 7 - Manual audit (single labeller)\n\naudit pending" + (f" ({audit['reason']})" if audit else "") + "\n"
 
 
 # ------------------------------------------------------------------ findings (computed from the numbers)
@@ -290,24 +304,49 @@ LIMITS = """## Limits and threats to validity
 - **One synthetic generator.** Every case, attack and benign look-alike comes from the same generator. The results do not show performance on real logs; the rules, parsers and verifier were developed against cases like these.
 - **Small samples, one run per setting.** Four cases, two cases for each secondary arm, one run each. Differences are indicative only. The judge (llama3.1:8b) is not perfectly reproducible even at temperature 0 with a fixed seed.
 - **Small local models.** Narrator and judge are 7B to 8B models. Larger models could behave quite differently.
-- **Single-labeller audit.** The manual audit has one labeller and no inter-annotator agreement.
+- **Audit limits.** The human audit (if present) has a single labeller and no inter-annotator agreement. The LLM-labelled audit is not independent: the labeller is from the same model family as the narrator.
 - **Facts mode is deliberately plain.** The facts-mode narrator mostly restates verified facts. Its higher supported rate partly reflects an easier task, not a better model.
 - **Baseline cite ranges inflate loose coverage.** The chunked baseline tends to cite wide ranges of events; loose coverage (no cite cap) therefore overstates what its sentences actually show. Strict coverage caps cites at 8.
 - **Held-out pool.** The held-out corruption pool was frozen (committed) before any evaluation run, but the verifier itself was designed knowing the original pool, and the held-out pool was written by the same author.
-- **Known verifier gaps.** See the missed corruptions listed under Table 5.
 - **Coverage is citation-based.** A sentence "covers" a step if it cites that step's key evidence, not if it describes it well. Entity coverage is a string match.
 """
+
+
+def gap_lines(tables, llm):
+    g = []
+    for m in (tables.get("corruption") or {}).get("missed") or []:
+        added = m["corrupted_text"][len(m["original_text"]):].strip()
+        g.append(f"  - Held-out corruption missed ({m['type']}, {m['case']}): the appended claim \"{added}\" was accepted by the judge.")
+    if llm and not llm.get("refused"):
+        acc = sum(llm["confusion_matrix"]["accepted"].values())
+        ms = llm["verifier_misses"]
+        ids = ", ".join(f"{m['item_id']} ({m['label']})" for m in ms)
+        g.append(f"  - Accepted sentences that overstate: in the LLM-labelled audit {len(ms)} of {acc} accepted sentences were labelled P or U: {ids}. "
+                 "They state more than the cited lines show: a boundary or aggregate claim (\"failed attempts ended at T\" when only one failed line is cited) "
+                 "or a characterisation (\"events related to persistence\"). Counts, absence claims and similar statements are the typical weak spot; "
+                 "the same audit also found sentences of that kind among the REJECTED ones, so the verifier does catch some of them.")
+        for f in llm["false_rejections"]:
+            if f["item_id"] == "A025":
+                g.append("  - A025 (labelled S by the LLM labeller) ends in a cut-off backslash (\"... created the scheduled task \\\\\"). It passed every deterministic layer, "
+                         "so there is no dangling-ending check for a trailing backslash; only the judge rejected it "
+                         f"({f['failure_codes'].replace(';', ', ')}). It was REJECTED, so it did not reach the final narrative.")
+    return g or ["  - See the missed corruptions listed under Table 5."]
+
+
+def limits(tables, llm):
+    return LIMITS.rstrip("\n") + "\n- **Known verifier gaps.**\n" + "\n".join(gap_lines(tables, llm)) + "\n"
 
 
 def build(eval_dir, audit_override=None):
     eval_dir = Path(eval_dir)
     tables, prov = load(eval_dir / "tables.json"), load(eval_dir / "provenance.json")
     audit = audit_override if audit_override is not None else load(eval_dir / "audit" / "audit_scores.json")
+    llm = load(eval_dir / "audit" / "audit_scores_llm.json")
     if tables is None:
         raise SystemExit("eval/tables.json missing: run the aggregate stage first")
     body = ["# EvidenceWeave - evaluation results\n",
             "Generated by `scripts/make_results.py` from `eval/results.json`, `eval/tables.json` and `eval/provenance.json`. Numbers are reported as they came out.\n",
-            setup(prov, tables), t1(tables), t2(tables), t3(tables), t4(tables), t5(tables), t6(tables), t7(audit), LIMITS, shows(tables, audit)]
+            setup(prov, tables), t1(tables), t2(tables), t3(tables), t4(tables), t5(tables), t6(tables), t7(audit, llm), limits(tables, llm), shows(tables, audit)]
     return "\n".join(body), tables, audit
 
 

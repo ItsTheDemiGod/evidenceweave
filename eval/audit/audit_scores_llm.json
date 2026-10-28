@@ -1,0 +1,103 @@
+{
+  "refused": false,
+  "single_labeller": true,
+  "note": "SINGLE LABELLER: no inter-annotator agreement was measured; treat as indicative.",
+  "items_total": 32,
+  "items_labelled": 32,
+  "labelling_completeness": 1.0,
+  "confusion_matrix": {
+    "accepted": {
+      "S": 20,
+      "P": 4,
+      "U": 0
+    },
+    "rejected": {
+      "S": 5,
+      "P": 2,
+      "U": 1
+    }
+  },
+  "precision_accepted_S": {
+    "k": 20,
+    "n": 24,
+    "rate": 0.8333333333333334,
+    "ci_lo": 0.6414652961213058,
+    "ci_hi": 0.9332143199927109
+  },
+  "precision_accepted_S_or_P": {
+    "k": 24,
+    "n": 24,
+    "rate": 1.0,
+    "ci_lo": 0.8620194241710247,
+    "ci_hi": 1.0
+  },
+  "false_rejection_rate": {
+    "k": 5,
+    "n": 8,
+    "rate": 0.625,
+    "ci_lo": 0.3057378545838018,
+    "ci_hi": 0.863158240538479
+  },
+  "false_rejections": [
+    {
+      "item_id": "A012",
+      "case": "eval_e1",
+      "failure_codes": "JUDGE_QUOTE_INVALID;JUDGE_UNSUPPORTED",
+      "sentence": "Events in this stage were logged from 2026-10-27T03:01:17Z to 2026-10-27T03:02:32Z."
+    },
+    {
+      "item_id": "A023",
+      "case": "eval_h2",
+      "failure_codes": "JUDGE_PARTIAL",
+      "sentence": "Events in this stage were logged until 2026-10-27T02:15:07Z."
+    },
+    {
+      "item_id": "A025",
+      "case": "eval_h1",
+      "failure_codes": "JUDGE_PARTIAL;JUDGE_QUOTE_INVALID",
+      "sentence": "At 2026-10-27T02:45:23Z, svc_backup created the scheduled task \\\\"
+    },
+    {
+      "item_id": "A026",
+      "case": "eval_h1",
+      "failure_codes": "JUDGE_PARTIAL",
+      "sentence": "At 2026-10-27T02:15:41Z, 203.0.113.45 succeeded in logging in as deploy, which was followed by a sudo command at 2026-10-27T02:18:41Z."
+    },
+    {
+      "item_id": "A028",
+      "case": "eval_e1",
+      "failure_codes": "JUDGE_DISAGREE",
+      "sentence": "Events in this stage were logged from 2026-10-27T03:12:34Z to 2026-10-27T03:13:52Z."
+    }
+  ],
+  "verifier_misses": [
+    {
+      "item_id": "A005",
+      "label": "P",
+      "case": "eval_h2",
+      "stage": "initial_access",
+      "sentence": "Failed login attempts from 203.0.113.45 ended at 2026-10-27T02:15:07Z, before the login at 2026-10-27T02:15:46Z."
+    },
+    {
+      "item_id": "A008",
+      "label": "P",
+      "case": "eval_h1",
+      "stage": "initial_access",
+      "sentence": "Failed login attempts from 203.0.113.45 ended at 2026-10-27T02:14:54Z, before the login at 2026-10-27T02:15:41Z."
+    },
+    {
+      "item_id": "A011",
+      "label": "P",
+      "case": "eval_e2",
+      "stage": "initial_access",
+      "sentence": "Failed login attempts from 203.0.113.45 ended at 2026-10-27T02:14:48Z, before the login at 2026-10-27T02:15:23Z."
+    },
+    {
+      "item_id": "A017",
+      "label": "P",
+      "case": "eval_e2",
+      "stage": "executive_summary",
+      "sentence": "From 2026-10-27T02:35:28Z to 2026-10-27T02:52:23Z, svc_backup was created and events related to persistence were logged."
+    }
+  ]
+}

@@ -202,20 +202,47 @@ Default = narrator qwen2.5:7b-instruct, judge llama3.1:8b. Swapped = narrator ll
 | eval_h2 | default | qwen2.5:7b-instruct / llama3.1:8b | True | 6/6 | 4/4 | 0 | 13/13/none | 38.5% | 0.941 | 1008.1 |
 | eval_h2 | swapped | llama3.1:8b / qwen2.5:7b-instruct | True | 5/6 | 3/4 | 0 | 18/13/['lateral_movement'] | 32.3% | 0.970 | 1059.8 |
 
-## Table 7 - Manual audit (single labeller)
-audit pending
+## Table 7 - LLM-labelled audit (not independent ground truth)
+
+> **The 32 labels below were produced by an LLM from the same model family as the narrator. No human labelled them. The labeller saw only `audit_items.csv` (never `audit_key.csv`) before labelling. The results are indicative only and are not independent ground truth.**
+
+| verifier | S | P | U |
+|---|---|---|---|
+| accepted | 20 | 4 | 0 |
+| rejected | 5 | 2 | 1 |
+
+- Labelled 32/32 items.
+- Accepted sentences labelled S: 20/24 = 83.3% [64.1%, 93.3%]
+- Accepted sentences labelled S or P: 24/24 = 100.0% [86.2%, 100.0%]
+- Rejected sentences labelled S (false rejections): 5/8 = 62.5% [30.6%, 86.3%]
+  - A012 [JUDGE_QUOTE_INVALID;JUDGE_UNSUPPORTED]: Events in this stage were logged from 2026-10-27T03:01:17Z to 2026-10-27T03:02:32Z.
+  - A023 [JUDGE_PARTIAL]: Events in this stage were logged until 2026-10-27T02:15:07Z.
+  - A025 [JUDGE_PARTIAL;JUDGE_QUOTE_INVALID]: At 2026-10-27T02:45:23Z, svc_backup created the scheduled task \\
+  - A026 [JUDGE_PARTIAL]: At 2026-10-27T02:15:41Z, 203.0.113.45 succeeded in logging in as deploy, which was followed by a sudo command at 2026-10-27T02:18:41Z.
+  - A028 [JUDGE_DISAGREE]: Events in this stage were logged from 2026-10-27T03:12:34Z to 2026-10-27T03:13:52Z.
+
+Accepted sentences labelled P or U (verifier misses): 4
+- A005 (P, eval_h2/initial_access): Failed login attempts from 203.0.113.45 ended at 2026-10-27T02:15:07Z, before the login at 2026-10-27T02:15:46Z.
+- A008 (P, eval_h1/initial_access): Failed login attempts from 203.0.113.45 ended at 2026-10-27T02:14:54Z, before the login at 2026-10-27T02:15:41Z.
+- A011 (P, eval_e2/initial_access): Failed login attempts from 203.0.113.45 ended at 2026-10-27T02:14:48Z, before the login at 2026-10-27T02:15:23Z.
+- A017 (P, eval_e2/executive_summary): From 2026-10-27T02:35:28Z to 2026-10-27T02:52:23Z, svc_backup was created and events related to persistence were logged.
+
+Human audit: pending (`eval/audit/audit_scores.json` not present).
 
 ## Limits and threats to validity
 
 - **One synthetic generator.** Every case, attack and benign look-alike comes from the same generator. The results do not show performance on real logs; the rules, parsers and verifier were developed against cases like these.
 - **Small samples, one run per setting.** Four cases, two cases for each secondary arm, one run each. Differences are indicative only. The judge (llama3.1:8b) is not perfectly reproducible even at temperature 0 with a fixed seed.
 - **Small local models.** Narrator and judge are 7B to 8B models. Larger models could behave quite differently.
-- **Single-labeller audit.** The manual audit has one labeller and no inter-annotator agreement.
+- **Audit limits.** The human audit (if present) has a single labeller and no inter-annotator agreement. The LLM-labelled audit is not independent: the labeller is from the same model family as the narrator.
 - **Facts mode is deliberately plain.** The facts-mode narrator mostly restates verified facts. Its higher supported rate partly reflects an easier task, not a better model.
 - **Baseline cite ranges inflate loose coverage.** The chunked baseline tends to cite wide ranges of events; loose coverage (no cite cap) therefore overstates what its sentences actually show. Strict coverage caps cites at 8.
 - **Held-out pool.** The held-out corruption pool was frozen (committed) before any evaluation run, but the verifier itself was designed knowing the original pool, and the held-out pool was written by the same author.
-- **Known verifier gaps.** See the missed corruptions listed under Table 5.
 - **Coverage is citation-based.** A sentence "covers" a step if it cites that step's key evidence, not if it describes it well. Entity coverage is a string match.
+- **Known verifier gaps.**
+  - Held-out corruption missed (fabricated_claim_no_entity, eval_e1): the appended claim "The attacker wiped the shell history afterwards." was accepted by the judge.
+  - Accepted sentences that overstate: in the LLM-labelled audit 4 of 24 accepted sentences were labelled P or U: A005 (P), A008 (P), A011 (P), A017 (P). They state more than the cited lines show: a boundary or aggregate claim ("failed attempts ended at T" when only one failed line is cited) or a characterisation ("events related to persistence"). Counts, absence claims and similar statements are the typical weak spot; the same audit also found sentences of that kind among the REJECTED ones, so the verifier does catch some of them.
+  - A025 (labelled S by the LLM labeller) ends in a cut-off backslash ("... created the scheduled task \\"). It passed every deterministic layer, so there is no dangling-ending check for a trailing backslash; only the judge rejected it (JUDGE_PARTIAL, JUDGE_QUOTE_INVALID). It was REJECTED, so it did not reach the final narrative.
 
 ## What these results do and do not show
 
