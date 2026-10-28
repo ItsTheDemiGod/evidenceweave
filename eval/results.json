@@ -1,0 +1,433 @@
+{
+  "stages": {
+    "detect": {
+      "eval_e1": {
+        "seconds": 0.30000000000000004,
+        "check": {
+          "rows": [
+            {
+              "step": 1,
+              "name": "brute_force",
+              "key": 35,
+              "chain": 35,
+              "tp": 35,
+              "fn": [],
+              "fp": [],
+              "precision": 1.0,
+              "recall": 1.0
+            },
+            {
+              "step": 2,
+              "name": "initial_access",
+              "key": 1,
+              "chain": 1,
+              "tp": 1,
+              "fn": [],
+              "fp": [],
+              "precision": 1.0,
+              "recall": 1.0
+            },
+            {
+              "step": 3,
+              "name": "privilege_escalation",
+              "key": 1,
+              "chain": 1,
+              "tp": 1,
+              "fn": [],
+              "fp": [],
+              "precision": 1.0,
+              "recall": 1.0
+            },
+            {
+              "step": 4,
+              "name": "persistence",
+              "key": 13,
+              "chain": 13,
+              "tp": 13,
+              "fn": [],
+              "fp": [],
+              "precision": 1.0,
+              "recall": 1.0
+            },
+            {
+              "step": 5,
+              "name": "lateral_movement",
+              "key": 7,
+              "chain": 7,
+              "tp": 7,
+              "fn": [],
+              "fp": [],
+              "precision": 1.0,
+              "recall": 1.0
+            },
+            {
+              "step": 6,
+              "name": "web_recon",
+              "key": 26,
+              "chain": 26,
+              "tp": 26,
+              "fn": [],
+              "fp": [],
+              "precision": 1.0,
+              "recall": 1.0
+            }
+          ],
+          "tp": 83,
+          "fn": 0,
+          "fp": 0,
+          "decoy_hits": [],
+          "benign_hits": [],
+          "missing_expected": false,
+          "persistence_partial": false,
+          "missing_detected": false
+        },
+        "done": true,
+        "wall_seconds": 0.3
+      },
+      "eval_e2": {
+        "seconds": 0.30000000000000004,
+        "check": {
+          "rows": [
+            {
+              "step": 1,
+              "name": "brute_force",
+              "key": 37,
+              "chain": 37,
+              "tp": 37,
+              "fn": [],
+              "fp": [],
+              "precision": 1.0,
+              "recall": 1.0
+            },
+            {
+              "step": 2,
+              "name": "initial_access",
+              "key": 1,
+              "chain": 1,
+              "tp": 1,
+              "fn": [],
+              "fp": [],
+              "precision": 1.0,
+              "recall": 1.0
+            },
+            {
+              "step": 3,
+              "name": "privilege_escalation",
+              "key": 1,
+              "chain": 1,
+              "tp": 1,
+              "fn": [],
+              "fp": [],
+              "precision": 1.0,
+              "recall": 1.0
+            },
+            {
+              "step": 4,
+              "name": "persistence",
+              "key": 13,
+              "chain": 13,
+              "tp": 13,
+              "fn": [],
+              "fp": [],
+              "precision": 1.0,
+              "recall": 1.0
+            },
+            {
+              "step": 5,
+              "name": "lateral_movement",
+              "key": 9,
+              "chain": 9,
+              "tp": 9,
+              "fn": [],
+              "fp": [],
+              "precision": 1.0,
+              "recall": 1.0
+            },
+            {
+              "step": 6,
+              "name": "web_recon",
+              "key": 26,
+              "chain": 26,
+              "tp": 26,
+              "fn": [],
+              "fp": [],
+              "precision": 1.0,
+              "recall": 1.0
+            }
+          ],
+          "tp": 87,
+          "fn": 0,
+          "fp": 0,
+          "decoy_hits": [],
+          "benign_hits": [],
+          "missing_expected": false,
+          "persistence_partial": false,
+          "missing_detected": false
+        },
+        "done": true,
+        "wall_seconds": 0.3
+      },
+      "eval_h1": {
+        "seconds": 0.5,
+        "check": {
+          "rows": [
+            {
+              "step": 1,
+              "name": "brute_force",
+              "key": 27,
+              "chain": 27,
+              "tp": 27,
+              "fn": [],
+              "fp": [],
+              "precision": 1.0,
+              "recall": 1.0
+            },
+            {
+              "step": 2,
+              "name": "initial_access",
+              "key": 1,
+              "chain": 1,
+              "tp": 1,
+              "fn": [],
+              "fp": [],
+              "precision": 1.0,
+              "recall": 1.0
+            },
+            {
+              "step": 3,
+              "name": "privilege_escalation",
+              "key": 1,
+              "chain": 1,
+              "tp": 1,
+              "fn": [],
+              "fp": [],
+              "precision": 1.0,
+              "recall": 1.0
+            },
+            {
+              "step": 4,
+              "name": "persistence",
+              "key": 12,
+              "chain": 12,
+              "tp": 12,
+              "fn": [],
+              "fp": [],
+              "precision": 1.0,
+              "recall": 1.0
+            },
+            {
+              "step": 5,
+              "name": "lateral_movement",
+              "key": 9,
+              "chain": 9,
+              "tp": 9,
+              "fn": [],
+              "fp": [],
+              "precision": 1.0,
+              "recall": 1.0
+            },
+            {
+              "step": 6,
+              "name": "web_recon",
+              "key": 26,
+              "chain": 26,
+              "tp": 26,
+              "fn": [],
+              "fp": [],
+              "precision": 1.0,
+              "recall": 1.0
+            }
+          ],
+          "tp": 76,
+          "fn": 0,
+          "fp": 0,
+          "decoy_hits": [],
+          "benign_hits": [],
+          "missing_expected": true,
+          "persistence_partial": true,
+          "missing_detected": true
+        },
+        "done": true,
+        "wall_seconds": 0.5
+      },
+      "eval_h2": {
+        "seconds": 0.4,
+        "check": {
+          "rows": [
+            {
+              "step": 1,
+              "name": "brute_force",
+              "key": 36,
+              "chain": 36,
+              "tp": 36,
+              "fn": [],
+              "fp": [],
+              "precision": 1.0,
+              "recall": 1.0
+            },
+            {
+              "step": 2,
+              "name": "initial_access",
+              "key": 1,
+              "chain": 1,
+              "tp": 1,
+              "fn": [],
+              "fp": [],
+              "precision": 1.0,
+              "recall": 1.0
+            },
+            {
+              "step": 3,
+              "name": "privilege_escalation",
+              "key": 1,
+              "chain": 1,
+              "tp": 1,
+              "fn": [],
+              "fp": [],
+              "precision": 1.0,
+              "recall": 1.0
+            },
+            {
+              "step": 4,
+              "name": "persistence",
+              "key": 12,
+              "chain": 12,
+              "tp": 12,
+              "fn": [],
+              "fp": [],
+              "precision": 1.0,
+              "recall": 1.0
+            },
+            {
+              "step": 5,
+              "name": "lateral_movement",
+              "key": 7,
+              "chain": 7,
+              "tp": 7,
+              "fn": [],
+              "fp": [],
+              "precision": 1.0,
+              "recall": 1.0
+            },
+            {
+              "step": 6,
+              "name": "web_recon",
+              "key": 26,
+              "chain": 26,
+              "tp": 26,
+              "fn": [],
+              "fp": [],
+              "precision": 1.0,
+              "recall": 1.0
+            }
+          ],
+          "tp": 83,
+          "fn": 0,
+          "fp": 0,
+          "decoy_hits": [],
+          "benign_hits": [],
+          "missing_expected": true,
+          "persistence_partial": true,
+          "missing_detected": true
+        },
+        "done": true,
+        "wall_seconds": 0.4
+      }
+    },
+    "facts": {
+      "eval_e1": {
+        "seconds": 1057.2,
+        "done": true,
+        "wall_seconds": 1057.2
+      },
+      "eval_e2": {
+        "seconds": 959.6,
+        "done": true,
+        "wall_seconds": 959.6
+      },
+      "eval_h1": {
+        "seconds": 1074.4,
+        "done": true,
+        "wall_seconds": 1074.4
+      },
+      "eval_h2": {
+        "seconds": 1012.8,
+        "done": true,
+        "wall_seconds": 1012.8
+      }
+    },
+    "audit": {
+      "_all": {
+        "items": 32,
+        "dir": "C:\\Users\\demia\\Desktop\\evidenceweave\\eval\\audit",
+        "done": true,
+        "wall_seconds": 0.1
+      }
+    },
+    "baseline": {
+      "eval_e1": {
+        "seconds": 187.10000000000002,
+        "done": true,
+        "wall_seconds": 187.1
+      },
+      "eval_e2": {
+        "seconds": 500.1,
+        "done": true,
+        "wall_seconds": 500.0
+      },
+      "eval_h1": {
+        "seconds": 723.0,
+        "done": true,
+        "wall_seconds": 722.9
+      },
+      "eval_h2": {
+        "seconds": 1752.1,
+        "done": true,
+        "wall_seconds": 1752.1
+      }
+    },
+    "corruption": {
+      "eval_e1": {
+        "seconds": 295.6,
+        "done": true,
+        "wall_seconds": 295.6
+      },
+      "eval_h1": {
+        "seconds": 324.3,
+        "done": true,
+        "wall_seconds": 324.3
+      }
+    },
+    "raw": {
+      "eval_e1": {
+        "seconds": 284.0,
+        "done": true,
+        "wall_seconds": 284.0
+      },
+      "eval_h1": {
+        "seconds": 376.0,
+        "done": true,
+        "wall_seconds": 376.0
+      }
+    },
+    "swap": {
+      "eval_e2": {
+        "seconds": 923.3,
+        "done": true,
+        "wall_seconds": 923.3
+      },
+      "eval_h2": {
+        "seconds": 1064.7,
+        "done": true,
+        "wall_seconds": 1064.7
+      }
+    },
+    "aggregate": {
+      "_all": {
+        "tables": "C:\\Users\\demia\\Desktop\\evidenceweave\\eval\\tables.json",
+        "done": true,
+        "wall_seconds": 0.1
+      }
+    }
+  }
+}

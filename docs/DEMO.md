@@ -49,5 +49,14 @@
 ## Results
 
 <!-- RESULTS:START -->
-_Placeholder: filled by `scripts/make_results.py` from `eval/results.json`. See docs/RESULTS.md._
+| arm | runs | mean strict step coverage | attacker entities covered (per case) |
+|---|---|---|---|
+| facts (chain) | 4 case(s) | 91.7% | 3/4; 4/4; 4/4; 4/4 |
+| baseline | 4 case(s) | 8.3% | 1/4; 1/4; 0/4; 1/4 |
+| raw (chain) | 2 case(s) | 33.3% | 3/4; 3/4 |
+| facts, roles swapped | 2 case(s) | 91.7% | 4/4; 3/4 |
+
+1. The deterministic rules recovered 329 of 329 key evidence lines (recall 100.0%) with 0 extra lines (precision 100.0%) on the 4 held-out generated cases. The cases come from the same generator the rules were developed against. See docs/RESULTS.md.
+2. Mean strict step coverage over cases: chain narrator (accepted LLM sentences) 91.7%, baseline as written 8.3% (loose, no cite cap: 91.7% vs 16.7%); baseline verified subset strict 0.0%. See docs/RESULTS.md.
+3. Held-out corruption: 119 of 120 injected corruptions rejected (119/120 = 99.2% [95.4%, 99.9%]); 1 missed; false rejection of clean controls 2/28 = 7.1% [2.0%, 22.6%]. See docs/RESULTS.md.
 <!-- RESULTS:END -->

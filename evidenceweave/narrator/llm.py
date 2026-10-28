@@ -83,7 +83,7 @@ def parse_sentences(text: str) -> dict | None:
 
 class OllamaClient:
     def __init__(self, model: str = OLLAMA_MODEL, url: str = OLLAMA_URL, num_ctx: int = 8192,
-                 temperature: float = 0, seed: int = 42, keep_alive: str = "10m", timeout: int = 1800,
+                 temperature: float = 0, seed: int = 42, keep_alive: str = "10m", timeout: int = 600,
                  schema: dict | None = None, validator=None):
         self.model, self.url, self.keep_alive, self.timeout = model, url.rstrip("/"), keep_alive, timeout
         self.options = {"temperature": temperature, "seed": seed, "num_ctx": num_ctx}

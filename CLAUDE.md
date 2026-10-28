@@ -111,6 +111,14 @@ Part 0 diagnosis is in `output/diagnosis_phase5b.md` (made by `scripts/make_diag
 - **Report** (`evidenceweave/report/{build,render}.py`, `template.html`): one offline file, inline CSS/JS, no framework, no external references, no links. jinja2 autoescape for all text; data embedded as JSON with `<`, `>`, `&` escaped (`<` ...); JS uses textContent only. Jinja comment delimiters are `<<# #>>` (CSS `{#drawer` clashes). Sections: header (mode banners, deterministic verdict from chain counts), summary strip, timeline (positioned bars, status text+icon+pattern, attempts-only lane dashed), executive summary, stage cards (facts | verified sentences with badges LLM + verified / deterministic / template), evidence drawer (raw line, file:line, corrected+logged time, +-3 context lines, Esc, copy id, focus return), attempts-only, could-not-prove, method+limits (details, expanded for print), footer (tool version, git, "synthetic" only if manifest has `synthetic` or `generator_version`; answer key never read). Deterministic given `generated_at`.
 - **Docs/demo**: `README.md`, `docs/DEMO.md` (timed 7 min script, backup plan, checklist, 12 questions, Results placeholder for 6b), `scripts/demo.ps1 [-NoLlm] [-Case] [-Seed]`, `docs/demo/sample_report_case02{,_no_llm}.html`.
 
+## Phase 6b: evaluation harness, held-out pool, audit kit, results
+- **Held-out pool** (`verifier/corruption_pools.py`, frozen in commit bd454528, never edited since): `HELDOUT_NO_ENTITY_CLAIMS` (14), `HELDOUT_ENTITY_FABRICATIONS` (10) + `HELDOUT_ENTITY_KINDS`. `verify --mode corruption --pool original|heldout [--corruption-cap N]`; the heldout pool rewrites only the `fabricated_entity` / `fabricated_claim_no_entity` samples after selection (seeded permutation, each entry once before reuse). `corruption_report.json` records `pool{name,sha256}`, seed, and `entity_kind` per sample/miss.
+- **Harness** `scripts/evaluate_cases.py` (the only evaluation code that reads the key; `python -m evidenceweave.cli evaluate ...` runs it as a subprocess with the same args). Cases eval_e1/e2 (easy 101/102), eval_h1/h2 (hard 201/202). Stages in order: detect, facts, audit, baseline, corruption (e1,h1; heldout; cap 60), raw (e1,h1; `output_raw/`), swap (e2,h2; narrator llama3.1:8b / judge qwen2.5:7b-instruct; `output_swap/`), aggregate. Flags: `--resume` (skip finished stage/case), `--stages a,b`, `--skip a,b`, `--eval-dir/--output/--output-raw/--output-swap/--data-dir`. Each finished (stage, case) is written to `eval/results.json` at once; logs in `eval/logs/`; `aggregate` writes `eval/tables.json` from files only.
+- **Metrics**: strict step coverage = sentence with <=8 cites and >=1 cite in the step's key evidence IDs (steps covered by any final sentence / 6); loose = no cite cap; "llm" set = accepted LLM sentences incl. executive summary, "incl. fallback + template" = plus template_fallback and attempts_only/unprovable template sentences; baseline = as written and verified subset. Entity coverage = distinct set {key attacker_ip, compromised_user, chain ips/users/hosts, URL hosts} matched as exact case-sensitive tokens. False alarm = final sentence (<=8 cites) citing a benign_but_suspicious line (NOTE: in hard cases the deterministic template sentence about the decoy actor cites such lines, so it counts; it is not an LLM claim). Corruption: per type deterministic / judge-only / missed with Wilson 95% intervals (`scripts/stats.py`), split by entity kind; false rejection on clean controls.
+- **Audit kit**: `scripts/audit_sample.py` (seed 42; 6 accepted LLM + 2 rejected sentences per case = 32, shuffled) -> `eval/audit/{audit_items.csv (UTF-8 BOM, blind), audit_key.csv, README.md}`. Label S/P/U in `label`, then `python scripts/audit_score.py --labels eval/audit/audit_items.csv` -> `audit_scores.json` (refuses below 80% labelled; single labeller). Then `python scripts/make_results.py` to refresh docs/RESULTS.md.
+- **Results**: `scripts/make_results.py` -> `docs/RESULTS.md` (tables 1-7, limits, what is/is not shown) and fills the RESULTS markers in `docs/DEMO.md`; idempotent; missing arms print "not run"; table 7 says "audit pending" until scores exist. `eval/provenance.json` has start/end code hashes (combined SHA-256 over evidenceweave/); `eval/CHANGES.md` logs the one infrastructure fix (Ollama request timeout 1800 -> 600 s in `narrator/llm.py`, after a 57-minute stall in baseline/eval_e2; the stage and later ones were rerun). The end hash therefore differs from the start hash by that one file.
+- **Part 0**: README/DEMO no longer carry cross-arm numbers (the old "4 of 4" entity figure double counted the payload host = attacker IP); they point to docs/RESULTS.md.
+
 ## Phase plan
 - [x] Phase 0 Setup
 - [x] Phase 1 Synthetic log generator + answer key
@@ -120,7 +128,7 @@ Part 0 diagnosis is in `output/diagnosis_phase5b.md` (made by `scripts/make_diag
 - [x] Phase 5 Citation verifier + retry loop
 - [x] Phase 5b Fact-sheet narration, hardened judge, reproducibility
 - [x] Phase 6a analyze command, HTML report, docs + demo kit
-- [ ] Phase 6b multi-case evaluation, held-out corruption pool, manual audit (remaining)
+- [x] Phase 6b multi-case evaluation, held-out corruption pool, audit kit, results (complete pending the manual audit scoring)
 
 ## Working rules (Claude Code)
 - Work on one phase at a time; never start the next phase until the user says so.
@@ -132,6 +140,9 @@ Part 0 diagnosis is in `output/diagnosis_phase5b.md` (made by `scripts/make_diag
 - venv built from the standard Windows Python 3.12 (`%LOCALAPPDATA%\Programs\Python\Python312`), not the MSYS2 `python` on PATH, which creates a non-standard `.venv/bin` layout without `Scripts\Activate.ps1`.
 
 ## Open issues
+- (Phase 6b) The manual audit (eval/audit/audit_items.csv) is not labelled yet: table 7 of docs/RESULTS.md says "audit pending". Score it with scripts/audit_score.py, then rerun scripts/make_results.py.
+- (Phase 6b) One held-out no-entity fabrication was accepted by the judge; hostnames/domains are only caught because the judge or path/host layers reject them (extractors do not model unknown hostnames).
+- (Phase 6b) Everything comes from one synthetic generator and one run per setting; baseline strict coverage is low partly because it cites wide ranges (>8 cites).
 - (Phase 6a) Live case02 run: only 15 of 27 first-pass+repair sentences accepted, judge agreement 0.80; the report is correct but plain. Badge tooltips list the checks generically, not per verdict. Report timeline uses one row per stage; no search box.
 - (Phase 5b, measured) Judge protocol limits: an aggregate claim ("4 failed logons", "ran 4 times") cannot be backed by ONE quote, so it is structurally rejected (JUDGE_QUOTE_INVALID/PARTIAL); relational words ("preceded", "over the network", "was recorded") are marked "not shown". The status fact cannot be proven by the judge.
 - (Phase 5b) llama3.1:8b is unreliable and only partly reproducible: judge_agreement 0.92-0.96 (case01), 0.80 (case02); JUDGE_DISAGREE 4 / 12 sentences; ~60 sentences per run where the judge's own verdict differs from the code-derived one. Seed 43 at temperature 0 gives little independence.
@@ -219,6 +230,15 @@ Part 0 diagnosis is in `output/diagnosis_phase5b.md` (made by `scripts/make_diag
 - Live (one run, case02 hard, qwen2.5:7b-instruct + llama3.1:8b, double judge): narrate 74.6 s, verify+repair 934.2 s (judge rounds 346/253/221 s), report 0.3 s; accepted 15, dropped 12, no fallback units, judge agreement 0.797; sentences accepted per round 8/27, 4/19, 3/15. `--reuse` rebuild 0.2 s. no-llm: ~0.3 s total, 32/33 sentences accepted, 0 dropped (case02/case01).
 - Decisions: no-llm reuses `_finish` from repair.py (source relabelled `deterministic`); badge tooltips are static per source (not per-verdict); optional search box skipped; manifest "synthetic" flag = `synthetic` key or `generator_version`.
 - Problems: Ollama was not running at start (started `ollama serve`); `{#` in CSS broke Jinja; judge double-run dominates runtime (~15 min).
+
+### Phase 6b - 2026-10-28
+- Built: held-out corruption pool + `--pool/--corruption-cap`, `evaluate` subcommand, scripts `{evaluate_cases,stats,audit_sample,audit_score,make_results,provenance}.py`, `docs/RESULTS.md`, `eval/*`.
+- Tests: 212 passed (22 new in test_corruption_pools.py + test_eval.py; none call Ollama).
+- Live (1 run per setting): S1 detect 4 cases <1 s, recall = precision = 1.000 (329/329 lines); S2 facts 960-1074 s per case; S4 baseline 187-1752 s per case (hard-case baselines used ~35 calls and ~500k tokens); S5 heldout corruption 296/324 s; S6 raw 284/376 s; S7 swap 923/1065 s.
+- Results (details in docs/RESULTS.md): mean strict step coverage chain 91.7% vs baseline-as-written 8.3% (baseline verified subset 0%); held-out corruption 119/120 rejected (1 miss: a no-entity claim the judge accepted), clean-control false rejection 2/28; raw mode ended mostly as fallback (5 of 7 units); roles swapped gave similar numbers (judge_independent true).
+- Decisions: table "not run" for arms outside their designed case subset; template decoy sentence counted as a false alarm by the literal definition and annotated.
+- Problems: harness stalled ~57 min in baseline/eval_e2 (hung narrate request/machine suspend); killed, timeout default lowered to 600 s (logged in eval/CHANGES.md), resumed. A `
+` escape and an unmatched-quote edit broke make_results.py once (fixed). Git Bash heredocs choked on one large command, files were written with the Write tool.
 
 ## How to run (Windows PowerShell)
 ```powershell

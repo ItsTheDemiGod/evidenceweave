@@ -1,0 +1,2409 @@
+{
+  "cases": {
+    "eval_e1": {
+      "difficulty": "easy",
+      "seed": 101
+    },
+    "eval_e2": {
+      "difficulty": "easy",
+      "seed": 102
+    },
+    "eval_h1": {
+      "difficulty": "hard",
+      "seed": 201
+    },
+    "eval_h2": {
+      "difficulty": "hard",
+      "seed": 202
+    }
+  },
+  "detection": {
+    "per_case": {
+      "eval_e1": {
+        "rows": [
+          {
+            "step": 1,
+            "name": "brute_force",
+            "key": 35,
+            "chain": 35,
+            "tp": 35,
+            "fn": [],
+            "fp": [],
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          {
+            "step": 2,
+            "name": "initial_access",
+            "key": 1,
+            "chain": 1,
+            "tp": 1,
+            "fn": [],
+            "fp": [],
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          {
+            "step": 3,
+            "name": "privilege_escalation",
+            "key": 1,
+            "chain": 1,
+            "tp": 1,
+            "fn": [],
+            "fp": [],
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          {
+            "step": 4,
+            "name": "persistence",
+            "key": 13,
+            "chain": 13,
+            "tp": 13,
+            "fn": [],
+            "fp": [],
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          {
+            "step": 5,
+            "name": "lateral_movement",
+            "key": 7,
+            "chain": 7,
+            "tp": 7,
+            "fn": [],
+            "fp": [],
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          {
+            "step": 6,
+            "name": "web_recon",
+            "key": 26,
+            "chain": 26,
+            "tp": 26,
+            "fn": [],
+            "fp": [],
+            "precision": 1.0,
+            "recall": 1.0
+          }
+        ],
+        "tp": 83,
+        "fn": 0,
+        "fp": 0,
+        "decoy_hits": [],
+        "benign_hits": [],
+        "missing_expected": false,
+        "missing_detected": false,
+        "persistence_partial": false
+      },
+      "eval_e2": {
+        "rows": [
+          {
+            "step": 1,
+            "name": "brute_force",
+            "key": 37,
+            "chain": 37,
+            "tp": 37,
+            "fn": [],
+            "fp": [],
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          {
+            "step": 2,
+            "name": "initial_access",
+            "key": 1,
+            "chain": 1,
+            "tp": 1,
+            "fn": [],
+            "fp": [],
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          {
+            "step": 3,
+            "name": "privilege_escalation",
+            "key": 1,
+            "chain": 1,
+            "tp": 1,
+            "fn": [],
+            "fp": [],
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          {
+            "step": 4,
+            "name": "persistence",
+            "key": 13,
+            "chain": 13,
+            "tp": 13,
+            "fn": [],
+            "fp": [],
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          {
+            "step": 5,
+            "name": "lateral_movement",
+            "key": 9,
+            "chain": 9,
+            "tp": 9,
+            "fn": [],
+            "fp": [],
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          {
+            "step": 6,
+            "name": "web_recon",
+            "key": 26,
+            "chain": 26,
+            "tp": 26,
+            "fn": [],
+            "fp": [],
+            "precision": 1.0,
+            "recall": 1.0
+          }
+        ],
+        "tp": 87,
+        "fn": 0,
+        "fp": 0,
+        "decoy_hits": [],
+        "benign_hits": [],
+        "missing_expected": false,
+        "missing_detected": false,
+        "persistence_partial": false
+      },
+      "eval_h1": {
+        "rows": [
+          {
+            "step": 1,
+            "name": "brute_force",
+            "key": 27,
+            "chain": 27,
+            "tp": 27,
+            "fn": [],
+            "fp": [],
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          {
+            "step": 2,
+            "name": "initial_access",
+            "key": 1,
+            "chain": 1,
+            "tp": 1,
+            "fn": [],
+            "fp": [],
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          {
+            "step": 3,
+            "name": "privilege_escalation",
+            "key": 1,
+            "chain": 1,
+            "tp": 1,
+            "fn": [],
+            "fp": [],
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          {
+            "step": 4,
+            "name": "persistence",
+            "key": 12,
+            "chain": 12,
+            "tp": 12,
+            "fn": [],
+            "fp": [],
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          {
+            "step": 5,
+            "name": "lateral_movement",
+            "key": 9,
+            "chain": 9,
+            "tp": 9,
+            "fn": [],
+            "fp": [],
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          {
+            "step": 6,
+            "name": "web_recon",
+            "key": 26,
+            "chain": 26,
+            "tp": 26,
+            "fn": [],
+            "fp": [],
+            "precision": 1.0,
+            "recall": 1.0
+          }
+        ],
+        "tp": 76,
+        "fn": 0,
+        "fp": 0,
+        "decoy_hits": [],
+        "benign_hits": [],
+        "missing_expected": true,
+        "missing_detected": true,
+        "persistence_partial": true
+      },
+      "eval_h2": {
+        "rows": [
+          {
+            "step": 1,
+            "name": "brute_force",
+            "key": 36,
+            "chain": 36,
+            "tp": 36,
+            "fn": [],
+            "fp": [],
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          {
+            "step": 2,
+            "name": "initial_access",
+            "key": 1,
+            "chain": 1,
+            "tp": 1,
+            "fn": [],
+            "fp": [],
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          {
+            "step": 3,
+            "name": "privilege_escalation",
+            "key": 1,
+            "chain": 1,
+            "tp": 1,
+            "fn": [],
+            "fp": [],
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          {
+            "step": 4,
+            "name": "persistence",
+            "key": 12,
+            "chain": 12,
+            "tp": 12,
+            "fn": [],
+            "fp": [],
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          {
+            "step": 5,
+            "name": "lateral_movement",
+            "key": 7,
+            "chain": 7,
+            "tp": 7,
+            "fn": [],
+            "fp": [],
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          {
+            "step": 6,
+            "name": "web_recon",
+            "key": 26,
+            "chain": 26,
+            "tp": 26,
+            "fn": [],
+            "fp": [],
+            "precision": 1.0,
+            "recall": 1.0
+          }
+        ],
+        "tp": 83,
+        "fn": 0,
+        "fp": 0,
+        "decoy_hits": [],
+        "benign_hits": [],
+        "missing_expected": true,
+        "missing_detected": true,
+        "persistence_partial": true
+      }
+    },
+    "pooled": {
+      "tp": 329,
+      "fn": 0,
+      "fp": 0,
+      "recall": 1.0,
+      "precision": 1.0,
+      "per_step": {
+        "1": {
+          "name": "brute_force",
+          "tp": 135,
+          "fn": 0,
+          "fp": 0,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "2": {
+          "name": "initial_access",
+          "tp": 4,
+          "fn": 0,
+          "fp": 0,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "3": {
+          "name": "privilege_escalation",
+          "tp": 4,
+          "fn": 0,
+          "fp": 0,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "4": {
+          "name": "persistence",
+          "tp": 50,
+          "fn": 0,
+          "fp": 0,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "5": {
+          "name": "lateral_movement",
+          "tp": 32,
+          "fn": 0,
+          "fp": 0,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "6": {
+          "name": "web_recon",
+          "tp": 104,
+          "fn": 0,
+          "fp": 0,
+          "recall": 1.0,
+          "precision": 1.0
+        }
+      }
+    }
+  },
+  "arms": {
+    "facts": {
+      "eval_e1": {
+        "status": "ok",
+        "coverage": {
+          "llm": {
+            "sentences": 15,
+            "steps_covered_strict": [
+              1,
+              2,
+              3,
+              4,
+              6
+            ],
+            "steps_covered_loose": [
+              1,
+              2,
+              3,
+              4,
+              6
+            ],
+            "coverage_strict": 0.8333,
+            "coverage_loose": 0.8333,
+            "entities": {
+              "covered": 3,
+              "total": 4,
+              "covered_list": [
+                "203.0.113.45",
+                "deploy",
+                "web01"
+              ],
+              "missing": [
+                "ws-fin01"
+              ]
+            },
+            "decoy_mentions": [],
+            "false_alarms": 0,
+            "sentences_over_cap": 0
+          },
+          "llm_plus_fallback_and_template": {
+            "sentences": 23,
+            "steps_covered_strict": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "steps_covered_loose": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "coverage_strict": 1.0,
+            "coverage_loose": 1.0,
+            "entities": {
+              "covered": 4,
+              "total": 4,
+              "covered_list": [
+                "203.0.113.45",
+                "deploy",
+                "web01",
+                "ws-fin01"
+              ],
+              "missing": []
+            },
+            "decoy_mentions": [],
+            "false_alarms": 0,
+            "sentences_over_cap": 0
+          }
+        },
+        "verification": {
+          "accepted": 15,
+          "dropped": 12,
+          "fallback_units": [
+            "lateral_movement"
+          ],
+          "attempt0_supported_rate": 0.2593,
+          "final_supported_rate": 0.5556,
+          "judge_agreement_rate": 0.8545,
+          "judge_error_count": 0,
+          "repair_failing_at_attempt0": 20,
+          "fixed_round_1": 7,
+          "fixed_round_2": 1,
+          "narrator_model": "qwen2.5:7b-instruct",
+          "judge_model": "llama3.1:8b",
+          "judge_independent": true,
+          "judge_double": true,
+          "narration_mode": "facts",
+          "no_llm": false,
+          "narrate_seconds": 68.49,
+          "verify_seconds": 984.17,
+          "total_seconds": 1052.7,
+          "tokens": 7296,
+          "narrator_calls": 18,
+          "judged_sentences": 55
+        },
+        "efficiency": {
+          "narrate_seconds": 68.49,
+          "verify_seconds": 984.17,
+          "total_seconds": 1052.7,
+          "tokens": 7296,
+          "narrator_calls": 18
+        }
+      },
+      "eval_e2": {
+        "status": "ok",
+        "coverage": {
+          "llm": {
+            "sentences": 18,
+            "steps_covered_strict": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "steps_covered_loose": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "coverage_strict": 1.0,
+            "coverage_loose": 1.0,
+            "entities": {
+              "covered": 4,
+              "total": 4,
+              "covered_list": [
+                "203.0.113.45",
+                "deploy",
+                "web01",
+                "ws-fin01"
+              ],
+              "missing": []
+            },
+            "decoy_mentions": [],
+            "false_alarms": 0,
+            "sentences_over_cap": 0
+          },
+          "llm_plus_fallback_and_template": {
+            "sentences": 18,
+            "steps_covered_strict": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "steps_covered_loose": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "coverage_strict": 1.0,
+            "coverage_loose": 1.0,
+            "entities": {
+              "covered": 4,
+              "total": 4,
+              "covered_list": [
+                "203.0.113.45",
+                "deploy",
+                "web01",
+                "ws-fin01"
+              ],
+              "missing": []
+            },
+            "decoy_mentions": [],
+            "false_alarms": 0,
+            "sentences_over_cap": 0
+          }
+        },
+        "verification": {
+          "accepted": 18,
+          "dropped": 10,
+          "fallback_units": [],
+          "attempt0_supported_rate": 0.3929,
+          "final_supported_rate": 0.6429,
+          "judge_agreement_rate": 0.9434,
+          "judge_error_count": 0,
+          "repair_failing_at_attempt0": 17,
+          "fixed_round_1": 6,
+          "fixed_round_2": 1,
+          "narrator_model": "qwen2.5:7b-instruct",
+          "judge_model": "llama3.1:8b",
+          "judge_independent": true,
+          "judge_double": true,
+          "narration_mode": "facts",
+          "no_llm": false,
+          "narrate_seconds": 72.9,
+          "verify_seconds": 882.13,
+          "total_seconds": 955.0,
+          "tokens": 7610,
+          "narrator_calls": 18,
+          "judged_sentences": 53
+        },
+        "efficiency": {
+          "narrate_seconds": 72.9,
+          "verify_seconds": 882.13,
+          "total_seconds": 955.0,
+          "tokens": 7610,
+          "narrator_calls": 18
+        }
+      },
+      "eval_h1": {
+        "status": "ok",
+        "coverage": {
+          "llm": {
+            "sentences": 13,
+            "steps_covered_strict": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "steps_covered_loose": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "coverage_strict": 0.8333,
+            "coverage_loose": 0.8333,
+            "entities": {
+              "covered": 4,
+              "total": 4,
+              "covered_list": [
+                "203.0.113.45",
+                "deploy",
+                "web01",
+                "ws-fin01"
+              ],
+              "missing": []
+            },
+            "decoy_mentions": [],
+            "false_alarms": 0,
+            "sentences_over_cap": 0
+          },
+          "llm_plus_fallback_and_template": {
+            "sentences": 19,
+            "steps_covered_strict": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "steps_covered_loose": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "coverage_strict": 1.0,
+            "coverage_loose": 1.0,
+            "entities": {
+              "covered": 4,
+              "total": 4,
+              "covered_list": [
+                "203.0.113.45",
+                "deploy",
+                "web01",
+                "ws-fin01"
+              ],
+              "missing": []
+            },
+            "decoy_mentions": [
+              {
+                "decoy": "198.51.100.23",
+                "sentence": "198.51.100.23 made 12 web requests between 2026-10-27T01:40:08Z and 2026-10-27T01:42:03Z; no successful access from this address was observed."
+              }
+            ],
+            "false_alarms": 1,
+            "sentences_over_cap": 0
+          }
+        },
+        "verification": {
+          "accepted": 13,
+          "dropped": 12,
+          "fallback_units": [
+            "web_recon"
+          ],
+          "attempt0_supported_rate": 0.32,
+          "final_supported_rate": 0.52,
+          "judge_agreement_rate": 0.8679,
+          "judge_error_count": 1,
+          "repair_failing_at_attempt0": 17,
+          "fixed_round_1": 3,
+          "fixed_round_2": 2,
+          "narrator_model": "qwen2.5:7b-instruct",
+          "judge_model": "llama3.1:8b",
+          "judge_independent": true,
+          "judge_double": true,
+          "narration_mode": "facts",
+          "no_llm": false,
+          "narrate_seconds": 67.04,
+          "verify_seconds": 1002.57,
+          "total_seconds": 1069.6,
+          "tokens": 7276,
+          "narrator_calls": 19,
+          "judged_sentences": 53
+        },
+        "efficiency": {
+          "narrate_seconds": 67.04,
+          "verify_seconds": 1002.57,
+          "total_seconds": 1069.6,
+          "tokens": 7276,
+          "narrator_calls": 19
+        }
+      },
+      "eval_h2": {
+        "status": "ok",
+        "coverage": {
+          "llm": {
+            "sentences": 13,
+            "steps_covered_strict": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "steps_covered_loose": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "coverage_strict": 1.0,
+            "coverage_loose": 1.0,
+            "entities": {
+              "covered": 4,
+              "total": 4,
+              "covered_list": [
+                "203.0.113.45",
+                "deploy",
+                "web01",
+                "ws-fin01"
+              ],
+              "missing": []
+            },
+            "decoy_mentions": [],
+            "false_alarms": 0,
+            "sentences_over_cap": 0
+          },
+          "llm_plus_fallback_and_template": {
+            "sentences": 15,
+            "steps_covered_strict": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "steps_covered_loose": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "coverage_strict": 1.0,
+            "coverage_loose": 1.0,
+            "entities": {
+              "covered": 4,
+              "total": 4,
+              "covered_list": [
+                "203.0.113.45",
+                "deploy",
+                "web01",
+                "ws-fin01"
+              ],
+              "missing": []
+            },
+            "decoy_mentions": [
+              {
+                "decoy": "198.51.100.23",
+                "sentence": "198.51.100.23 made 12 web requests between 2026-10-27T01:40:11Z and 2026-10-27T01:41:55Z; no successful access from this address was observed."
+              }
+            ],
+            "false_alarms": 1,
+            "sentences_over_cap": 0
+          }
+        },
+        "verification": {
+          "accepted": 13,
+          "dropped": 13,
+          "fallback_units": [],
+          "attempt0_supported_rate": 0.3846,
+          "final_supported_rate": 0.5,
+          "judge_agreement_rate": 0.9412,
+          "judge_error_count": 1,
+          "repair_failing_at_attempt0": 16,
+          "fixed_round_1": 3,
+          "fixed_round_2": 0,
+          "narrator_model": "qwen2.5:7b-instruct",
+          "judge_model": "llama3.1:8b",
+          "judge_independent": true,
+          "judge_double": true,
+          "narration_mode": "facts",
+          "no_llm": false,
+          "narrate_seconds": 68.81,
+          "verify_seconds": 939.27,
+          "total_seconds": 1008.1,
+          "tokens": 7329,
+          "narrator_calls": 17,
+          "judged_sentences": 51
+        },
+        "efficiency": {
+          "narrate_seconds": 68.81,
+          "verify_seconds": 939.27,
+          "total_seconds": 1008.1,
+          "tokens": 7329,
+          "narrator_calls": 17
+        }
+      }
+    },
+    "baseline": {
+      "eval_e1": {
+        "status": "ok",
+        "coverage": {
+          "as_written": {
+            "sentences": 6,
+            "steps_covered_strict": [],
+            "steps_covered_loose": [
+              1
+            ],
+            "coverage_strict": 0.0,
+            "coverage_loose": 0.1667,
+            "entities": {
+              "covered": 1,
+              "total": 4,
+              "covered_list": [
+                "203.0.113.45"
+              ],
+              "missing": [
+                "deploy",
+                "web01",
+                "ws-fin01"
+              ]
+            },
+            "decoy_mentions": [],
+            "false_alarms": 0,
+            "sentences_over_cap": 1
+          },
+          "verified_subset": {
+            "sentences": 1,
+            "steps_covered_strict": [],
+            "steps_covered_loose": [],
+            "coverage_strict": 0.0,
+            "coverage_loose": 0.0,
+            "entities": {
+              "covered": 0,
+              "total": 4,
+              "covered_list": [],
+              "missing": [
+                "203.0.113.45",
+                "deploy",
+                "web01",
+                "ws-fin01"
+              ]
+            },
+            "decoy_mentions": [],
+            "false_alarms": 0,
+            "sentences_over_cap": 0
+          }
+        },
+        "verification": {
+          "accepted": 1,
+          "total": 6,
+          "supported_rate": 0.1667,
+          "supported_rate_excluding_cap_only": 0.2,
+          "judge_verdict_counts": {
+            "partial": 4,
+            "supported": 1
+          },
+          "judge_model": "llama3.1:8b",
+          "narrator_model": "qwen2.5:7b-instruct"
+        },
+        "efficiency": {
+          "narrate_seconds": 129.15,
+          "verify_seconds": 53.19,
+          "total_seconds": 182.3,
+          "tokens": 95997,
+          "llm_calls": 8,
+          "chunks": 7,
+          "failed_parses": 0
+        }
+      },
+      "eval_e2": {
+        "status": "ok",
+        "coverage": {
+          "as_written": {
+            "sentences": 25,
+            "steps_covered_strict": [
+              4,
+              6
+            ],
+            "steps_covered_loose": [
+              1,
+              4,
+              6
+            ],
+            "coverage_strict": 0.3333,
+            "coverage_loose": 0.5,
+            "entities": {
+              "covered": 1,
+              "total": 4,
+              "covered_list": [
+                "203.0.113.45"
+              ],
+              "missing": [
+                "deploy",
+                "web01",
+                "ws-fin01"
+              ]
+            },
+            "decoy_mentions": [],
+            "false_alarms": 0,
+            "sentences_over_cap": 1
+          },
+          "verified_subset": {
+            "sentences": 6,
+            "steps_covered_strict": [],
+            "steps_covered_loose": [],
+            "coverage_strict": 0.0,
+            "coverage_loose": 0.0,
+            "entities": {
+              "covered": 0,
+              "total": 4,
+              "covered_list": [],
+              "missing": [
+                "203.0.113.45",
+                "deploy",
+                "web01",
+                "ws-fin01"
+              ]
+            },
+            "decoy_mentions": [],
+            "false_alarms": 0,
+            "sentences_over_cap": 0
+          }
+        },
+        "verification": {
+          "accepted": 6,
+          "total": 25,
+          "supported_rate": 0.24,
+          "supported_rate_excluding_cap_only": 0.25,
+          "judge_verdict_counts": {
+            "supported": 6,
+            "unsupported": 2,
+            "partial": 9,
+            "disagree": 1
+          },
+          "judge_model": "llama3.1:8b",
+          "narrator_model": "qwen2.5:7b-instruct"
+        },
+        "efficiency": {
+          "narrate_seconds": 230.15,
+          "verify_seconds": 264.74,
+          "total_seconds": 494.9,
+          "tokens": 95261,
+          "llm_calls": 8,
+          "chunks": 7,
+          "failed_parses": 0
+        }
+      },
+      "eval_h1": {
+        "status": "ok",
+        "coverage": {
+          "as_written": {
+            "sentences": 6,
+            "steps_covered_strict": [],
+            "steps_covered_loose": [],
+            "coverage_strict": 0.0,
+            "coverage_loose": 0.0,
+            "entities": {
+              "covered": 0,
+              "total": 4,
+              "covered_list": [],
+              "missing": [
+                "203.0.113.45",
+                "deploy",
+                "web01",
+                "ws-fin01"
+              ]
+            },
+            "decoy_mentions": [],
+            "false_alarms": 0,
+            "sentences_over_cap": 0
+          },
+          "verified_subset": {
+            "sentences": 0,
+            "steps_covered_strict": [],
+            "steps_covered_loose": [],
+            "coverage_strict": 0.0,
+            "coverage_loose": 0.0,
+            "entities": {
+              "covered": 0,
+              "total": 4,
+              "covered_list": [],
+              "missing": [
+                "203.0.113.45",
+                "deploy",
+                "web01",
+                "ws-fin01"
+              ]
+            },
+            "decoy_mentions": [],
+            "false_alarms": 0,
+            "sentences_over_cap": 0
+          }
+        },
+        "verification": {
+          "accepted": 0,
+          "total": 6,
+          "supported_rate": 0.0,
+          "supported_rate_excluding_cap_only": 0.0,
+          "judge_verdict_counts": {
+            "unsupported": 2,
+            "partial": 2
+          },
+          "judge_model": "llama3.1:8b",
+          "narrator_model": "qwen2.5:7b-instruct"
+        },
+        "efficiency": {
+          "narrate_seconds": 659.31,
+          "verify_seconds": 58.43,
+          "total_seconds": 717.7,
+          "tokens": 492134,
+          "llm_calls": 34,
+          "chunks": 33,
+          "failed_parses": 0
+        }
+      },
+      "eval_h2": {
+        "status": "ok",
+        "coverage": {
+          "as_written": {
+            "sentences": 11,
+            "steps_covered_strict": [],
+            "steps_covered_loose": [],
+            "coverage_strict": 0.0,
+            "coverage_loose": 0.0,
+            "entities": {
+              "covered": 1,
+              "total": 4,
+              "covered_list": [
+                "deploy"
+              ],
+              "missing": [
+                "203.0.113.45",
+                "web01",
+                "ws-fin01"
+              ]
+            },
+            "decoy_mentions": [],
+            "false_alarms": 0,
+            "sentences_over_cap": 3
+          },
+          "verified_subset": {
+            "sentences": 0,
+            "steps_covered_strict": [],
+            "steps_covered_loose": [],
+            "coverage_strict": 0.0,
+            "coverage_loose": 0.0,
+            "entities": {
+              "covered": 0,
+              "total": 4,
+              "covered_list": [],
+              "missing": [
+                "203.0.113.45",
+                "deploy",
+                "web01",
+                "ws-fin01"
+              ]
+            },
+            "decoy_mentions": [],
+            "false_alarms": 0,
+            "sentences_over_cap": 0
+          }
+        },
+        "verification": {
+          "accepted": 0,
+          "total": 11,
+          "supported_rate": 0.0,
+          "supported_rate_excluding_cap_only": 0.0,
+          "judge_verdict_counts": {
+            "disagree": 1,
+            "partial": 3
+          },
+          "judge_model": "llama3.1:8b",
+          "narrator_model": "qwen2.5:7b-instruct"
+        },
+        "efficiency": {
+          "narrate_seconds": 1656.54,
+          "verify_seconds": 90.42,
+          "total_seconds": 1747.0,
+          "tokens": 502510,
+          "llm_calls": 35,
+          "chunks": 33,
+          "failed_parses": 1
+        }
+      }
+    },
+    "raw": {
+      "eval_e1": {
+        "status": "ok",
+        "coverage": {
+          "llm": {
+            "sentences": 2,
+            "steps_covered_strict": [
+              2,
+              3
+            ],
+            "steps_covered_loose": [
+              2,
+              3
+            ],
+            "coverage_strict": 0.3333,
+            "coverage_loose": 0.3333,
+            "entities": {
+              "covered": 3,
+              "total": 4,
+              "covered_list": [
+                "203.0.113.45",
+                "deploy",
+                "web01"
+              ],
+              "missing": [
+                "ws-fin01"
+              ]
+            },
+            "decoy_mentions": [],
+            "false_alarms": 0,
+            "sentences_over_cap": 0
+          },
+          "llm_plus_fallback_and_template": {
+            "sentences": 12,
+            "steps_covered_strict": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "steps_covered_loose": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "coverage_strict": 1.0,
+            "coverage_loose": 1.0,
+            "entities": {
+              "covered": 4,
+              "total": 4,
+              "covered_list": [
+                "203.0.113.45",
+                "deploy",
+                "web01",
+                "ws-fin01"
+              ],
+              "missing": []
+            },
+            "decoy_mentions": [],
+            "false_alarms": 0,
+            "sentences_over_cap": 0
+          }
+        },
+        "verification": {
+          "accepted": 2,
+          "dropped": 9,
+          "fallback_units": [
+            "brute_force",
+            "persistence",
+            "lateral_movement",
+            "web_recon",
+            "executive_summary"
+          ],
+          "attempt0_supported_rate": 0.0,
+          "final_supported_rate": 0.1818,
+          "judge_agreement_rate": 1.0,
+          "judge_error_count": 0,
+          "repair_failing_at_attempt0": 11,
+          "fixed_round_1": 2,
+          "fixed_round_2": null,
+          "narrator_model": "qwen2.5:7b-instruct",
+          "judge_model": "llama3.1:8b",
+          "judge_independent": true,
+          "judge_double": true,
+          "narration_mode": "raw",
+          "no_llm": false,
+          "narrate_seconds": 52.72,
+          "verify_seconds": 226.54,
+          "total_seconds": 279.3,
+          "tokens": 9881,
+          "narrator_calls": 20,
+          "judged_sentences": 8
+        },
+        "efficiency": {
+          "narrate_seconds": 52.72,
+          "verify_seconds": 226.54,
+          "total_seconds": 279.3,
+          "tokens": 9881,
+          "narrator_calls": 20
+        }
+      },
+      "eval_e2": {
+        "status": "not run"
+      },
+      "eval_h1": {
+        "status": "ok",
+        "coverage": {
+          "llm": {
+            "sentences": 2,
+            "steps_covered_strict": [
+              2,
+              3
+            ],
+            "steps_covered_loose": [
+              2,
+              3
+            ],
+            "coverage_strict": 0.3333,
+            "coverage_loose": 0.3333,
+            "entities": {
+              "covered": 3,
+              "total": 4,
+              "covered_list": [
+                "203.0.113.45",
+                "deploy",
+                "web01"
+              ],
+              "missing": [
+                "ws-fin01"
+              ]
+            },
+            "decoy_mentions": [],
+            "false_alarms": 0,
+            "sentences_over_cap": 0
+          },
+          "llm_plus_fallback_and_template": {
+            "sentences": 14,
+            "steps_covered_strict": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "steps_covered_loose": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "coverage_strict": 1.0,
+            "coverage_loose": 1.0,
+            "entities": {
+              "covered": 4,
+              "total": 4,
+              "covered_list": [
+                "203.0.113.45",
+                "deploy",
+                "web01",
+                "ws-fin01"
+              ],
+              "missing": []
+            },
+            "decoy_mentions": [
+              {
+                "decoy": "198.51.100.23",
+                "sentence": "198.51.100.23 made 12 web requests between 2026-10-27T01:40:08Z and 2026-10-27T01:42:03Z; no successful access from this address was observed."
+              }
+            ],
+            "false_alarms": 1,
+            "sentences_over_cap": 0
+          }
+        },
+        "verification": {
+          "accepted": 2,
+          "dropped": 9,
+          "fallback_units": [
+            "brute_force",
+            "persistence",
+            "lateral_movement",
+            "web_recon",
+            "executive_summary"
+          ],
+          "attempt0_supported_rate": 0.0909,
+          "final_supported_rate": 0.1818,
+          "judge_agreement_rate": 0.9333,
+          "judge_error_count": 0,
+          "repair_failing_at_attempt0": 10,
+          "fixed_round_1": 1,
+          "fixed_round_2": null,
+          "narrator_model": "qwen2.5:7b-instruct",
+          "judge_model": "llama3.1:8b",
+          "judge_independent": true,
+          "judge_double": true,
+          "narration_mode": "raw",
+          "no_llm": false,
+          "narrate_seconds": 47.56,
+          "verify_seconds": 323.47,
+          "total_seconds": 371.0,
+          "tokens": 10007,
+          "narrator_calls": 20,
+          "judged_sentences": 15
+        },
+        "efficiency": {
+          "narrate_seconds": 47.56,
+          "verify_seconds": 323.47,
+          "total_seconds": 371.0,
+          "tokens": 10007,
+          "narrator_calls": 20
+        }
+      },
+      "eval_h2": {
+        "status": "not run"
+      }
+    },
+    "swap": {
+      "eval_e1": {
+        "status": "not run"
+      },
+      "eval_e2": {
+        "status": "ok",
+        "coverage": {
+          "llm": {
+            "sentences": 20,
+            "steps_covered_strict": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "steps_covered_loose": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "coverage_strict": 1.0,
+            "coverage_loose": 1.0,
+            "entities": {
+              "covered": 4,
+              "total": 4,
+              "covered_list": [
+                "203.0.113.45",
+                "deploy",
+                "web01",
+                "ws-fin01"
+              ],
+              "missing": []
+            },
+            "decoy_mentions": [],
+            "false_alarms": 0,
+            "sentences_over_cap": 0
+          },
+          "llm_plus_fallback_and_template": {
+            "sentences": 20,
+            "steps_covered_strict": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "steps_covered_loose": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "coverage_strict": 1.0,
+            "coverage_loose": 1.0,
+            "entities": {
+              "covered": 4,
+              "total": 4,
+              "covered_list": [
+                "203.0.113.45",
+                "deploy",
+                "web01",
+                "ws-fin01"
+              ],
+              "missing": []
+            },
+            "decoy_mentions": [],
+            "false_alarms": 0,
+            "sentences_over_cap": 0
+          }
+        },
+        "verification": {
+          "accepted": 20,
+          "dropped": 9,
+          "fallback_units": [],
+          "attempt0_supported_rate": 0.3448,
+          "final_supported_rate": 0.6897,
+          "judge_agreement_rate": 0.9455,
+          "judge_error_count": 1,
+          "repair_failing_at_attempt0": 19,
+          "fixed_round_1": 5,
+          "fixed_round_2": 5,
+          "narrator_model": "llama3.1:8b",
+          "judge_model": "qwen2.5:7b-instruct",
+          "judge_independent": true,
+          "judge_double": true,
+          "narration_mode": "facts",
+          "no_llm": false,
+          "narrate_seconds": 77.77,
+          "verify_seconds": 840.85,
+          "total_seconds": 918.6,
+          "tokens": 6928,
+          "narrator_calls": 18,
+          "judged_sentences": 55
+        },
+        "efficiency": {
+          "narrate_seconds": 77.77,
+          "verify_seconds": 840.85,
+          "total_seconds": 918.6,
+          "tokens": 6928,
+          "narrator_calls": 18
+        }
+      },
+      "eval_h1": {
+        "status": "not run"
+      },
+      "eval_h2": {
+        "status": "ok",
+        "coverage": {
+          "llm": {
+            "sentences": 18,
+            "steps_covered_strict": [
+              1,
+              2,
+              3,
+              4,
+              6
+            ],
+            "steps_covered_loose": [
+              1,
+              2,
+              3,
+              4,
+              6
+            ],
+            "coverage_strict": 0.8333,
+            "coverage_loose": 0.8333,
+            "entities": {
+              "covered": 3,
+              "total": 4,
+              "covered_list": [
+                "203.0.113.45",
+                "deploy",
+                "web01"
+              ],
+              "missing": [
+                "ws-fin01"
+              ]
+            },
+            "decoy_mentions": [],
+            "false_alarms": 0,
+            "sentences_over_cap": 0
+          },
+          "llm_plus_fallback_and_template": {
+            "sentences": 28,
+            "steps_covered_strict": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "steps_covered_loose": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "coverage_strict": 1.0,
+            "coverage_loose": 1.0,
+            "entities": {
+              "covered": 4,
+              "total": 4,
+              "covered_list": [
+                "203.0.113.45",
+                "deploy",
+                "web01",
+                "ws-fin01"
+              ],
+              "missing": []
+            },
+            "decoy_mentions": [
+              {
+                "decoy": "198.51.100.23",
+                "sentence": "198.51.100.23 made 12 web requests between 2026-10-27T01:40:11Z and 2026-10-27T01:41:55Z; no successful access from this address was observed."
+              }
+            ],
+            "false_alarms": 1,
+            "sentences_over_cap": 0
+          }
+        },
+        "verification": {
+          "accepted": 18,
+          "dropped": 13,
+          "fallback_units": [
+            "lateral_movement"
+          ],
+          "attempt0_supported_rate": 0.3226,
+          "final_supported_rate": 0.5806,
+          "judge_agreement_rate": 0.9701,
+          "judge_error_count": 1,
+          "repair_failing_at_attempt0": 21,
+          "fixed_round_1": 5,
+          "fixed_round_2": 3,
+          "narrator_model": "llama3.1:8b",
+          "judge_model": "qwen2.5:7b-instruct",
+          "judge_independent": true,
+          "judge_double": true,
+          "narration_mode": "facts",
+          "no_llm": false,
+          "narrate_seconds": 74.24,
+          "verify_seconds": 985.54,
+          "total_seconds": 1059.8,
+          "tokens": 6667,
+          "narrator_calls": 18,
+          "judged_sentences": 67
+        },
+        "efficiency": {
+          "narrate_seconds": 74.24,
+          "verify_seconds": 985.54,
+          "total_seconds": 1059.8,
+          "tokens": 6667,
+          "narrator_calls": 18
+        }
+      }
+    }
+  },
+  "corruption": {
+    "status": "ok",
+    "cases": [
+      "eval_e1",
+      "eval_h1"
+    ],
+    "pool": {
+      "name": "heldout",
+      "sha256": "455ed9cf2b8778750c5ab5a0d06ff60bbe68bc89a41062d0681861b9fde63dbf"
+    },
+    "per_type": {
+      "ip_digit_drop": {
+        "injected": 12,
+        "deterministic": 12,
+        "judge_only": 0,
+        "judge_error": 0,
+        "missed": 0,
+        "caught": 12,
+        "catch": {
+          "k": 12,
+          "n": 12,
+          "rate": 1.0,
+          "ci_lo": 0.7574992425007574,
+          "ci_hi": 0.9999999999999998
+        }
+      },
+      "ip_swap": {
+        "injected": 13,
+        "deterministic": 13,
+        "judge_only": 0,
+        "judge_error": 0,
+        "missed": 0,
+        "caught": 13,
+        "catch": {
+          "k": 13,
+          "n": 13,
+          "rate": 1.0,
+          "ci_lo": 0.7718981569447084,
+          "ci_hi": 1.0
+        }
+      },
+      "time_shift": {
+        "injected": 13,
+        "deterministic": 13,
+        "judge_only": 0,
+        "judge_error": 0,
+        "missed": 0,
+        "caught": 13,
+        "catch": {
+          "k": 13,
+          "n": 13,
+          "rate": 1.0,
+          "ci_lo": 0.7718981569447084,
+          "ci_hi": 1.0
+        }
+      },
+      "number_change": {
+        "injected": 3,
+        "deterministic": 3,
+        "judge_only": 0,
+        "judge_error": 0,
+        "missed": 0,
+        "caught": 3,
+        "catch": {
+          "k": 3,
+          "n": 3,
+          "rate": 1.0,
+          "ci_lo": 0.4384939195509822,
+          "ci_hi": 1.0
+        }
+      },
+      "username_swap": {
+        "injected": 5,
+        "deterministic": 5,
+        "judge_only": 0,
+        "judge_error": 0,
+        "missed": 0,
+        "caught": 5,
+        "catch": {
+          "k": 5,
+          "n": 5,
+          "rate": 1.0,
+          "ci_lo": 0.565508505247919,
+          "ci_hi": 1.0
+        }
+      },
+      "cite_nonexistent": {
+        "injected": 13,
+        "deterministic": 13,
+        "judge_only": 0,
+        "judge_error": 0,
+        "missed": 0,
+        "caught": 13,
+        "catch": {
+          "k": 13,
+          "n": 13,
+          "rate": 1.0,
+          "ci_lo": 0.7718981569447084,
+          "ci_hi": 1.0
+        }
+      },
+      "cite_foreign_stage": {
+        "injected": 13,
+        "deterministic": 13,
+        "judge_only": 0,
+        "judge_error": 0,
+        "missed": 0,
+        "caught": 13,
+        "catch": {
+          "k": 13,
+          "n": 13,
+          "rate": 1.0,
+          "ci_lo": 0.7718981569447084,
+          "ci_hi": 1.0
+        }
+      },
+      "cite_wrong_event": {
+        "injected": 13,
+        "deterministic": 13,
+        "judge_only": 0,
+        "judge_error": 0,
+        "missed": 0,
+        "caught": 13,
+        "catch": {
+          "k": 13,
+          "n": 13,
+          "rate": 1.0,
+          "ci_lo": 0.7718981569447084,
+          "ci_hi": 1.0
+        }
+      },
+      "fabricated_entity": {
+        "injected": 12,
+        "deterministic": 8,
+        "judge_only": 4,
+        "judge_error": 0,
+        "missed": 0,
+        "caught": 12,
+        "catch": {
+          "k": 12,
+          "n": 12,
+          "rate": 1.0,
+          "ci_lo": 0.7574992425007574,
+          "ci_hi": 0.9999999999999998
+        }
+      },
+      "fabricated_claim_no_entity": {
+        "injected": 12,
+        "deterministic": 0,
+        "judge_only": 11,
+        "judge_error": 0,
+        "missed": 1,
+        "caught": 11,
+        "catch": {
+          "k": 11,
+          "n": 12,
+          "rate": 0.9166666666666666,
+          "ci_lo": 0.6461140782014047,
+          "ci_hi": 0.9851352905492264
+        }
+      },
+      "cite_padding": {
+        "injected": 11,
+        "deterministic": 11,
+        "judge_only": 0,
+        "judge_error": 0,
+        "missed": 0,
+        "caught": 11,
+        "catch": {
+          "k": 11,
+          "n": 11,
+          "rate": 1.0,
+          "ci_lo": 0.7411599827511859,
+          "ci_hi": 1.0
+        }
+      }
+    },
+    "fabricated_entity_by_kind": {
+      "ip": {
+        "injected": 4,
+        "caught": 4,
+        "catch": {
+          "k": 4,
+          "n": 4,
+          "rate": 1.0,
+          "ci_lo": 0.5100999795960008,
+          "ci_hi": 1.0
+        }
+      },
+      "bare_file": {
+        "injected": 2,
+        "caught": 2,
+        "catch": {
+          "k": 2,
+          "n": 2,
+          "rate": 1.0,
+          "ci_lo": 0.3423719528896193,
+          "ci_hi": 1.0
+        }
+      },
+      "hostname": {
+        "injected": 2,
+        "caught": 2,
+        "catch": {
+          "k": 2,
+          "n": 2,
+          "rate": 1.0,
+          "ci_lo": 0.3423719528896193,
+          "ci_hi": 1.0
+        }
+      },
+      "domain": {
+        "injected": 2,
+        "caught": 2,
+        "catch": {
+          "k": 2,
+          "n": 2,
+          "rate": 1.0,
+          "ci_lo": 0.3423719528896193,
+          "ci_hi": 1.0
+        }
+      },
+      "windows_path": {
+        "injected": 2,
+        "caught": 2,
+        "catch": {
+          "k": 2,
+          "n": 2,
+          "rate": 1.0,
+          "ci_lo": 0.3423719528896193,
+          "ci_hi": 1.0
+        }
+      }
+    },
+    "overall": {
+      "injected": 120,
+      "det": 104,
+      "judge_only": 15,
+      "missed": 1,
+      "catch": {
+        "k": 119,
+        "n": 120,
+        "rate": 0.9916666666666667,
+        "ci_lo": 0.9543025846256779,
+        "ci_hi": 0.9985274821693253
+      }
+    },
+    "control": {
+      "n": 28,
+      "rejected": 2,
+      "false_rejection": {
+        "k": 2,
+        "n": 28,
+        "rate": 0.07142857142857142,
+        "ci_lo": 0.01981164744777079,
+        "ci_hi": 0.2264573842591786
+      }
+    },
+    "missed": [
+      {
+        "case": "eval_e1",
+        "type": "fabricated_claim_no_entity",
+        "unit": "brute_force",
+        "original_text": "The attempts used at least 6 distinct usernames.",
+        "corrupted_text": "The attempts used at least 6 distinct usernames. The attacker wiped the shell history afterwards.",
+        "original_cites": [
+          "AUTH-L53",
+          "AUTH-L58",
+          "AUTH-L63",
+          "AUTH-L68",
+          "AUTH-L72",
+          "AUTH-L82"
+        ],
+        "corrupted_cites": [
+          "AUTH-L53",
+          "AUTH-L58",
+          "AUTH-L63",
+          "AUTH-L68",
+          "AUTH-L72",
+          "AUTH-L82"
+        ],
+        "judge": {
+          "model": "llama3.1:8b",
+          "verdict": "supported",
+          "reason": "all 6 claims quoted from the lines",
+          "seconds": 13.7,
+          "runs": [
+            {
+              "seed": 42,
+              "own_verdict": "supported",
+              "own_reason": "Multiple distinct usernames are shown in the log lines.",
+              "derived": "supported",
+              "claims": [
+                {
+                  "claim": "The attempts used at least 6 distinct usernames.",
+                  "supported": true,
+                  "quote": "invalid user user",
+                  "valid": true,
+                  "invalid_quote": false
+                },
+                {
+                  "claim": "The attempts used at least 6 distinct usernames.",
+                  "supported": true,
+                  "quote": "invalid user admin",
+                  "valid": true,
+                  "invalid_quote": false
+                },
+                {
+                  "claim": "The attempts used at least 6 distinct usernames.",
+                  "supported": true,
+                  "quote": "invalid user test",
+                  "valid": true,
+                  "invalid_quote": false
+                },
+                {
+                  "claim": "The attempts used at least 6 distinct usernames.",
+                  "supported": true,
+                  "quote": "root",
+                  "valid": true,
+                  "invalid_quote": false
+                },
+                {
+                  "claim": "The attempts used at least 6 distinct usernames.",
+                  "supported": true,
+                  "quote": "invalid user support",
+                  "valid": true,
+                  "invalid_quote": false
+                },
+                {
+                  "claim": "The attempts used at least 6 distinct usernames.",
+                  "supported": true,
+                  "quote": "deploy",
+                  "valid": true,
+                  "invalid_quote": false
+                }
+              ],
+              "invalid_quotes": 0,
+              "attempts": 1
+            },
+            {
+              "seed": 43,
+              "own_verdict": "supported",
+              "own_reason": "Multiple distinct usernames are shown in the log lines.",
+              "derived": "supported",
+              "claims": [
+                {
+                  "claim": "The attempts used at least 6 distinct usernames.",
+                  "supported": true,
+                  "quote": "invalid user user",
+                  "valid": true,
+                  "invalid_quote": false
+                },
+                {
+                  "claim": "The attempts used at least 6 distinct usernames.",
+                  "supported": true,
+                  "quote": "invalid user admin",
+                  "valid": true,
+                  "invalid_quote": false
+                },
+                {
+                  "claim": "The attempts used at least 6 distinct usernames.",
+                  "supported": true,
+                  "quote": "invalid user test",
+                  "valid": true,
+                  "invalid_quote": false
+                },
+                {
+                  "claim": "The attempts used at least 6 distinct usernames.",
+                  "supported": true,
+                  "quote": "root",
+                  "valid": true,
+                  "invalid_quote": false
+                },
+                {
+                  "claim": "The attempts used at least 6 distinct usernames.",
+                  "supported": true,
+                  "quote": "invalid user support",
+                  "valid": true,
+                  "invalid_quote": false
+                },
+                {
+                  "claim": "The attempts used at least 6 distinct usernames.",
+                  "supported": true,
+                  "quote": "deploy",
+                  "valid": true,
+                  "invalid_quote": false
+                }
+              ],
+              "invalid_quotes": 0,
+              "attempts": 1
+            }
+          ],
+          "agreement": true,
+          "own_vs_derived_disagreements": 0
+        },
+        "entity_kind": null
+      }
+    ]
+  },
+  "swap": {
+    "eval_e2": {
+      "default": {
+        "status": "ok",
+        "coverage": {
+          "llm": {
+            "sentences": 18,
+            "steps_covered_strict": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "steps_covered_loose": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "coverage_strict": 1.0,
+            "coverage_loose": 1.0,
+            "entities": {
+              "covered": 4,
+              "total": 4,
+              "covered_list": [
+                "203.0.113.45",
+                "deploy",
+                "web01",
+                "ws-fin01"
+              ],
+              "missing": []
+            },
+            "decoy_mentions": [],
+            "false_alarms": 0,
+            "sentences_over_cap": 0
+          },
+          "llm_plus_fallback_and_template": {
+            "sentences": 18,
+            "steps_covered_strict": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "steps_covered_loose": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "coverage_strict": 1.0,
+            "coverage_loose": 1.0,
+            "entities": {
+              "covered": 4,
+              "total": 4,
+              "covered_list": [
+                "203.0.113.45",
+                "deploy",
+                "web01",
+                "ws-fin01"
+              ],
+              "missing": []
+            },
+            "decoy_mentions": [],
+            "false_alarms": 0,
+            "sentences_over_cap": 0
+          }
+        },
+        "verification": {
+          "accepted": 18,
+          "dropped": 10,
+          "fallback_units": [],
+          "attempt0_supported_rate": 0.3929,
+          "final_supported_rate": 0.6429,
+          "judge_agreement_rate": 0.9434,
+          "judge_error_count": 0,
+          "repair_failing_at_attempt0": 17,
+          "fixed_round_1": 6,
+          "fixed_round_2": 1,
+          "narrator_model": "qwen2.5:7b-instruct",
+          "judge_model": "llama3.1:8b",
+          "judge_independent": true,
+          "judge_double": true,
+          "narration_mode": "facts",
+          "no_llm": false,
+          "narrate_seconds": 72.9,
+          "verify_seconds": 882.13,
+          "total_seconds": 955.0,
+          "tokens": 7610,
+          "narrator_calls": 18,
+          "judged_sentences": 53
+        },
+        "efficiency": {
+          "narrate_seconds": 72.9,
+          "verify_seconds": 882.13,
+          "total_seconds": 955.0,
+          "tokens": 7610,
+          "narrator_calls": 18
+        }
+      },
+      "swapped": {
+        "status": "ok",
+        "coverage": {
+          "llm": {
+            "sentences": 20,
+            "steps_covered_strict": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "steps_covered_loose": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "coverage_strict": 1.0,
+            "coverage_loose": 1.0,
+            "entities": {
+              "covered": 4,
+              "total": 4,
+              "covered_list": [
+                "203.0.113.45",
+                "deploy",
+                "web01",
+                "ws-fin01"
+              ],
+              "missing": []
+            },
+            "decoy_mentions": [],
+            "false_alarms": 0,
+            "sentences_over_cap": 0
+          },
+          "llm_plus_fallback_and_template": {
+            "sentences": 20,
+            "steps_covered_strict": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "steps_covered_loose": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "coverage_strict": 1.0,
+            "coverage_loose": 1.0,
+            "entities": {
+              "covered": 4,
+              "total": 4,
+              "covered_list": [
+                "203.0.113.45",
+                "deploy",
+                "web01",
+                "ws-fin01"
+              ],
+              "missing": []
+            },
+            "decoy_mentions": [],
+            "false_alarms": 0,
+            "sentences_over_cap": 0
+          }
+        },
+        "verification": {
+          "accepted": 20,
+          "dropped": 9,
+          "fallback_units": [],
+          "attempt0_supported_rate": 0.3448,
+          "final_supported_rate": 0.6897,
+          "judge_agreement_rate": 0.9455,
+          "judge_error_count": 1,
+          "repair_failing_at_attempt0": 19,
+          "fixed_round_1": 5,
+          "fixed_round_2": 5,
+          "narrator_model": "llama3.1:8b",
+          "judge_model": "qwen2.5:7b-instruct",
+          "judge_independent": true,
+          "judge_double": true,
+          "narration_mode": "facts",
+          "no_llm": false,
+          "narrate_seconds": 77.77,
+          "verify_seconds": 840.85,
+          "total_seconds": 918.6,
+          "tokens": 6928,
+          "narrator_calls": 18,
+          "judged_sentences": 55
+        },
+        "efficiency": {
+          "narrate_seconds": 77.77,
+          "verify_seconds": 840.85,
+          "total_seconds": 918.6,
+          "tokens": 6928,
+          "narrator_calls": 18
+        }
+      }
+    },
+    "eval_h2": {
+      "default": {
+        "status": "ok",
+        "coverage": {
+          "llm": {
+            "sentences": 13,
+            "steps_covered_strict": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "steps_covered_loose": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "coverage_strict": 1.0,
+            "coverage_loose": 1.0,
+            "entities": {
+              "covered": 4,
+              "total": 4,
+              "covered_list": [
+                "203.0.113.45",
+                "deploy",
+                "web01",
+                "ws-fin01"
+              ],
+              "missing": []
+            },
+            "decoy_mentions": [],
+            "false_alarms": 0,
+            "sentences_over_cap": 0
+          },
+          "llm_plus_fallback_and_template": {
+            "sentences": 15,
+            "steps_covered_strict": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "steps_covered_loose": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "coverage_strict": 1.0,
+            "coverage_loose": 1.0,
+            "entities": {
+              "covered": 4,
+              "total": 4,
+              "covered_list": [
+                "203.0.113.45",
+                "deploy",
+                "web01",
+                "ws-fin01"
+              ],
+              "missing": []
+            },
+            "decoy_mentions": [
+              {
+                "decoy": "198.51.100.23",
+                "sentence": "198.51.100.23 made 12 web requests between 2026-10-27T01:40:11Z and 2026-10-27T01:41:55Z; no successful access from this address was observed."
+              }
+            ],
+            "false_alarms": 1,
+            "sentences_over_cap": 0
+          }
+        },
+        "verification": {
+          "accepted": 13,
+          "dropped": 13,
+          "fallback_units": [],
+          "attempt0_supported_rate": 0.3846,
+          "final_supported_rate": 0.5,
+          "judge_agreement_rate": 0.9412,
+          "judge_error_count": 1,
+          "repair_failing_at_attempt0": 16,
+          "fixed_round_1": 3,
+          "fixed_round_2": 0,
+          "narrator_model": "qwen2.5:7b-instruct",
+          "judge_model": "llama3.1:8b",
+          "judge_independent": true,
+          "judge_double": true,
+          "narration_mode": "facts",
+          "no_llm": false,
+          "narrate_seconds": 68.81,
+          "verify_seconds": 939.27,
+          "total_seconds": 1008.1,
+          "tokens": 7329,
+          "narrator_calls": 17,
+          "judged_sentences": 51
+        },
+        "efficiency": {
+          "narrate_seconds": 68.81,
+          "verify_seconds": 939.27,
+          "total_seconds": 1008.1,
+          "tokens": 7329,
+          "narrator_calls": 17
+        }
+      },
+      "swapped": {
+        "status": "ok",
+        "coverage": {
+          "llm": {
+            "sentences": 18,
+            "steps_covered_strict": [
+              1,
+              2,
+              3,
+              4,
+              6
+            ],
+            "steps_covered_loose": [
+              1,
+              2,
+              3,
+              4,
+              6
+            ],
+            "coverage_strict": 0.8333,
+            "coverage_loose": 0.8333,
+            "entities": {
+              "covered": 3,
+              "total": 4,
+              "covered_list": [
+                "203.0.113.45",
+                "deploy",
+                "web01"
+              ],
+              "missing": [
+                "ws-fin01"
+              ]
+            },
+            "decoy_mentions": [],
+            "false_alarms": 0,
+            "sentences_over_cap": 0
+          },
+          "llm_plus_fallback_and_template": {
+            "sentences": 28,
+            "steps_covered_strict": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "steps_covered_loose": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "coverage_strict": 1.0,
+            "coverage_loose": 1.0,
+            "entities": {
+              "covered": 4,
+              "total": 4,
+              "covered_list": [
+                "203.0.113.45",
+                "deploy",
+                "web01",
+                "ws-fin01"
+              ],
+              "missing": []
+            },
+            "decoy_mentions": [
+              {
+                "decoy": "198.51.100.23",
+                "sentence": "198.51.100.23 made 12 web requests between 2026-10-27T01:40:11Z and 2026-10-27T01:41:55Z; no successful access from this address was observed."
+              }
+            ],
+            "false_alarms": 1,
+            "sentences_over_cap": 0
+          }
+        },
+        "verification": {
+          "accepted": 18,
+          "dropped": 13,
+          "fallback_units": [
+            "lateral_movement"
+          ],
+          "attempt0_supported_rate": 0.3226,
+          "final_supported_rate": 0.5806,
+          "judge_agreement_rate": 0.9701,
+          "judge_error_count": 1,
+          "repair_failing_at_attempt0": 21,
+          "fixed_round_1": 5,
+          "fixed_round_2": 3,
+          "narrator_model": "llama3.1:8b",
+          "judge_model": "qwen2.5:7b-instruct",
+          "judge_independent": true,
+          "judge_double": true,
+          "narration_mode": "facts",
+          "no_llm": false,
+          "narrate_seconds": 74.24,
+          "verify_seconds": 985.54,
+          "total_seconds": 1059.8,
+          "tokens": 6667,
+          "narrator_calls": 18,
+          "judged_sentences": 67
+        },
+        "efficiency": {
+          "narrate_seconds": 74.24,
+          "verify_seconds": 985.54,
+          "total_seconds": 1059.8,
+          "tokens": 6667,
+          "narrator_calls": 18
+        }
+      }
+    }
+  }
+}
