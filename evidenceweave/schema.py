@@ -72,3 +72,8 @@ class Event:
     def from_dict(cls, d: dict) -> Event:
         return cls(**{**d, "timestamp": from_iso_z(d["timestamp"]),
                       "raw_timestamp": from_iso_z(d["raw_timestamp"])})
+
+
+def format_ts(dt: datetime) -> str:
+    """Display form: ISO 8601 UTC, whole seconds, Z suffix (e.g. 2026-10-27T02:15:07Z). Stored formats are unchanged."""
+    return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")

@@ -8,6 +8,7 @@ TOO_MANY_CITES, INLINE_ID_NOT_ALLOWED = "TOO_MANY_CITES", "INLINE_ID_NOT_ALLOWED
 MALFORMED_IP, IP_NOT_GROUNDED, TIME_NOT_GROUNDED = "MALFORMED_IP", "IP_NOT_GROUNDED", "TIME_NOT_GROUNDED"
 NUMBER_NOT_GROUNDED, URL_NOT_GROUNDED, USER_NOT_GROUNDED = "NUMBER_NOT_GROUNDED", "URL_NOT_GROUNDED", "USER_NOT_GROUNDED"
 HOST_NOT_GROUNDED, COMMAND_NOT_GROUNDED, SEMANTIC_MISMATCH = "HOST_NOT_GROUNDED", "COMMAND_NOT_GROUNDED", "SEMANTIC_MISMATCH"
+PATH_NOT_GROUNDED = "PATH_NOT_GROUNDED"
 JUDGE_UNSUPPORTED, JUDGE_PARTIAL, JUDGE_ERROR = "JUDGE_UNSUPPORTED", "JUDGE_PARTIAL", "JUDGE_ERROR"
 DANGLING_ENDING = "DANGLING_ENDING"
 FACT_ID_UNKNOWN, CITES_NOT_FROM_FACTS, NO_FACT_REFERENCE = "FACT_ID_UNKNOWN", "CITES_NOT_FROM_FACTS", "NO_FACT_REFERENCE"
@@ -32,6 +33,7 @@ WORDS = {
     USER_NOT_GROUNDED: "it names a user or account that is not in the cited events",
     HOST_NOT_GROUNDED: "it names a host that is not in the cited events",
     COMMAND_NOT_GROUNDED: "it quotes a command or string that is not in the cited events",
+    PATH_NOT_GROUNDED: "it mentions a file path or file name that is not in the cited events",
     SEMANTIC_MISMATCH: "the claim is not what the cited events show (cite an event of the matching kind)",
     JUDGE_UNSUPPORTED: "an independent checker found it contradicted or not shown by the cited log lines",
     JUDGE_PARTIAL: "an independent checker found part of it unsupported by the cited log lines",

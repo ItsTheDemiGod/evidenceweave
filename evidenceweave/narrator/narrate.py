@@ -18,7 +18,7 @@ class NarratorConfig:
     max_evidence_per_stage: int = 12
     max_raw_chars: int = MAX_RAW_CHARS
     chunk_size: int = 120  # baseline only
-    mode: str = "raw"  # raw = Phase 4 raw-evidence prompts (library default); the CLI default is facts
+    mode: str = "facts"  # facts = rewrite deterministic facts (library + CLI default); raw = Phase 4 raw-evidence prompts
     max_facts: int = 8  # facts mode: facts per stage
 
 

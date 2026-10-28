@@ -105,7 +105,7 @@ def test_partial_stage_carries_missing_info(prepared):
 def test_narrate_valid(prepared, tmp_path):
     d = fresh(prepared, "case01", tmp_path)
     fake = FakeLLM()
-    out = narrate_chain(d, fake)
+    out = narrate_chain(d, fake, NarratorConfig(mode="raw"))
     assert load(d, "narrative.json") == out
     assert [s["stage"] for s in out["stages"]] == STAGES
     starts = [s["start_time"] for s in load(d, "chain.json")["stages"]]
@@ -129,7 +129,7 @@ def test_retry_once_then_ok_and_always_garbage(prepared, tmp_path):
         return None
 
     d = fresh(prepared, "case01", tmp_path)
-    out = narrate_chain(d, FakeLLM(flaky))
+    out = narrate_chain(d, FakeLLM(flaky), NarratorConfig(mode="raw"))
     pers = next(s for s in out["stages"] if s["stage"] == "persistence")
     assert pers["attempts"] == 2 and pers["parse_ok"] and pers["sentences"]
     assert out["stats"]["retries"] == 1 and out["stats"]["calls"] == 8 and out["stats"]["failed_parses"] == 1
@@ -138,7 +138,7 @@ def test_retry_once_then_ok_and_always_garbage(prepared, tmp_path):
         return "{not json" if "STAGE: lateral_movement" in user else None
 
     d2 = fresh(prepared, "case01", tmp_path / "x")
-    out2 = narrate_chain(d2, FakeLLM(broken))
+    out2 = narrate_chain(d2, FakeLLM(broken), NarratorConfig(mode="raw"))
     lm = next(s for s in out2["stages"] if s["stage"] == "lateral_movement")
     assert not lm["parse_ok"] and lm["sentences"] == [] and lm["attempts"] == 2
     assert [s["parse_ok"] for s in out2["stages"]].count(True) == 5 and out2["executive_summary"]
@@ -154,7 +154,7 @@ def test_wrong_structure_counts_as_unparseable():
 def test_made_up_ids_are_left_alone(prepared, tmp_path):
     bad = json.dumps({"sentences": [{"text": "Evil happened at 3am.", "cites": ["AUTH-L999999", "ZZZ-1"]}]})
     d = fresh(prepared, "case01", tmp_path)
-    out = narrate_chain(d, FakeLLM(lambda s, u, n: bad))
+    out = narrate_chain(d, FakeLLM(lambda s, u, n: bad), NarratorConfig(mode="raw"))
     for s in out["stages"]:
         assert s["sentences"] == [{"text": "Evil happened at 3am.", "cites": ["AUTH-L999999", "ZZZ-1"]}]
         assert "AUTH-L999999" not in s["allowed_cite_ids"]
@@ -165,7 +165,7 @@ def test_made_up_ids_are_left_alone(prepared, tmp_path):
 def test_template_sections_and_call_count(prepared, tmp_path):
     d = fresh(prepared, "case02", tmp_path)
     fake = FakeLLM()
-    out = narrate_chain(d, fake)
+    out = narrate_chain(d, fake, NarratorConfig(mode="raw"))
     assert len(fake.calls) == len(out["stages"]) + 1 == 7
     events = load_events(d / "events.jsonl")
     (a,) = out["attempts_only"]
@@ -176,7 +176,7 @@ def test_template_sections_and_call_count(prepared, tmp_path):
     (u,) = out["unprovable"]
     assert u["source"] == "template" and "svc_backup" in u["text"] and "could not be proven" in u["text"]
     assert u["cites"] and all(c in events for c in u["cites"])
-    easy = narrate_chain(fresh(prepared, "case01", tmp_path), FakeLLM())
+    easy = narrate_chain(fresh(prepared, "case01", tmp_path), FakeLLM(), NarratorConfig(mode="raw"))
     assert easy["attempts_only"] == [] and easy["unprovable"] == []
 
 
@@ -320,7 +320,7 @@ def test_ollama_timeout_is_a_failed_call(monkeypatch):
 # ---- 9. raw files ----
 def test_raw_prompts_and_replies_saved(prepared, tmp_path):
     d = fresh(prepared, "case01", tmp_path)
-    out = narrate_chain(d, FakeLLM(model="qwen2.5:7b-instruct"))
+    out = narrate_chain(d, FakeLLM(model="qwen2.5:7b-instruct"), NarratorConfig(mode="raw"))
     raw = d / "narrator_raw" / "chain_qwen2.5_7b-instruct"
     assert raw.is_dir() and ":" not in raw.name
     assert sorted(p.stem for p in raw.iterdir()) == sorted(STAGES + ["executive_summary"])
@@ -343,7 +343,7 @@ def test_determinism_with_fake(prepared, tmp_path):
     runs = []
     for i in (1, 2):
         d = fresh(prepared, "case02", tmp_path / str(i))
-        narrate_chain(d, FakeLLM())
+        narrate_chain(d, FakeLLM(), NarratorConfig(mode="raw"))
         runs.append(json.dumps(strip(load(d, "narrative.json")), sort_keys=True))
     assert runs[0] == runs[1]
 

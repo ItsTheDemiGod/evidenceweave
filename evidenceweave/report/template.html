@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EvidenceWeave report - {{ d.case.name }}</title>
+<style>
+:root{--bg:#f6f7f9;--panel:#fff;--text:#14181f;--muted:#4a5565;--line:#cdd3dc;--accent:#0b5cad;--ok:#146c2e;--warn:#8a4b00;--bad:#9b1c1c;--hl:#fff3b0;--chip:#e7edf5}
+@media (prefers-color-scheme: dark){:root{--bg:#10141a;--panel:#181e27;--text:#e8ecf1;--muted:#aab4c3;--line:#364152;--accent:#7db7f5;--ok:#7bd88f;--warn:#f0b35c;--bad:#ff8a8a;--hl:#5a4b00;--chip:#263142}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1180px;margin:0 auto;padding:16px}
+section,article,header.top{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin:0 0 14px}
+h1{margin:0 0 4px;font-size:1.5rem} h2{margin:0 0 8px;font-size:1.15rem} h3{margin:12px 0 4px;font-size:1rem}
+.muted{color:var(--muted)} .mono{font-family:ui-monospace,Consolas,monospace;font-size:.88em;word-break:break-all}
+.verdict{font-size:1.1rem;font-weight:600;margin:6px 0}
+.banner{border:2px solid var(--warn);border-radius:6px;padding:8px 12px;margin:8px 0;font-weight:600}
+.strip{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.strip div{border:1px solid var(--line);border-radius:6px;padding:8px;text-align:center}
+.strip b{display:block;font-size:1.4rem}
+.chip,.cite,.status,.badge{display:inline-block;border-radius:12px;padding:1px 9px;margin:2px 3px 2px 0;font-size:.85em;border:1px solid var(--line);background:var(--chip);color:var(--text)}
+button.cite{cursor:pointer;font-family:ui-monospace,Consolas,monospace;font-size:.8em}
+button.cite:hover{border-color:var(--accent)}
+.status{font-weight:600} .status.confirmed{border-color:var(--ok);color:var(--ok)} .status.partial,.status.unprovable{border-color:var(--warn);color:var(--warn)} .status.attempts_only{border-color:var(--bad);color:var(--bad);border-style:dashed}
+.badge{font-size:.75em;font-style:italic}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.tl{position:relative;display:grid;grid-template-columns:11rem 1fr;gap:4px 8px;align-items:center}
+.tl .lane{position:relative;height:26px;border-bottom:1px dotted var(--line)}
+.bar{position:absolute;top:3px;height:20px;min-width:6px;border:2px solid var(--ok);background:var(--ok);border-radius:3px;cursor:pointer;padding:0}
+.bar.partial{border-color:var(--warn);background:repeating-linear-gradient(45deg,var(--warn) 0 4px,transparent 4px 8px)}
+.bar.unprovable{border-color:var(--warn);background:radial-gradient(var(--warn) 1.5px,transparent 2px) 0 0/6px 6px}
+.bar.attempts_only{border:2px dashed var(--bad);background:transparent}
+.axis{position:relative;height:22px;border-top:2px solid var(--line)} .axis span{position:absolute;transform:translateX(-50%);font-size:.75em;color:var(--muted)}
+.lanehead{font-size:.85em;text-align:right;overflow-wrap:anywhere}
+.sep{grid-column:1/-1;font-size:.8em;color:var(--muted);font-weight:600;margin-top:6px}
+article.hl{background:var(--hl)}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:14px} .blk{border-left:3px solid var(--line);padding-left:10px}
+ul.s{margin:4px 0;padding-left:18px} ul.s li{margin:4px 0}
+table{border-collapse:collapse;width:100%} td,th{border:1px solid var(--line);padding:3px 8px;text-align:left;vertical-align:top;font-size:.9em}
+details>summary{cursor:pointer;font-weight:600}
+#drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,100%);background:var(--panel);border-left:2px solid var(--accent);padding:14px;overflow:auto;box-shadow:-4px 0 16px rgba(0,0,0,.25);z-index:10}
+#drawer[hidden]{display:none}
+#drawer pre{white-space:pre-wrap;word-break:break-all;background:var(--bg);border:1px solid var(--line);padding:8px;margin:6px 0}
+#drawer li.ctx{font-family:ui-monospace,Consolas,monospace;font-size:.8em;word-break:break-all;color:var(--muted);list-style:none}
+#drawer li.hit{background:var(--hl);color:var(--text);font-weight:600}
+button.act{font:inherit;padding:4px 10px;border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:4px;cursor:pointer;margin-right:6px}
+footer{color:var(--muted);font-size:.85em;padding:8px 0 24px}
+@media (max-width:820px){.strip{grid-template-columns:repeat(2,1fr)} .cols{grid-template-columns:1fr} .tl{grid-template-columns:7rem 1fr} #drawer{inset:8% 0 0 0;width:100%;border-left:0;border-top:2px solid var(--accent)}}
+@media print{#drawer{display:none!important} .tl .bar{border-width:1px} article,section{break-inside:avoid} body{background:#fff;color:#000} button.act{display:none}}
+</style>
+</head>
+<body>
+<main>
+{% macro chip(id) %}<button type="button" class="cite" data-id="{{ id }}" aria-label="Show evidence {{ id }}">{{ id }}</button>{% endmacro %}
+{% macro sents(items) %}
+<ul class="s">
+{% for s in items %}
+<li>{{ s.text }} <span class="badge" title="{{ s.tip }}" aria-label="{{ s.badge }}: {{ s.tip }}">{{ s.badge }}</span> {% for c in s.cites %}{{ chip(c) }}{% endfor %}</li>
+{% endfor %}
+</ul>
+{% endmacro %}
+
+<header class="top" id="sec-header">
+<h1>EvidenceWeave incident report: {{ d.case.name }}</h1>
+<div class="muted">Generated {{ d.case.generated_at }} &middot; mode: {{ d.case.mode }} &middot; narration: {{ d.case.narration_mode }}</div>
+{% for b in d.banners %}
+<div class="banner" role="alert">{{ b.text }}</div>
+{% endfor %}
+<div class="verdict">{{ d.verdict }}</div>
+</header>
+
+<section id="sec-summary" aria-label="Summary">
+<div class="strip">
+<div><b>{{ d.summary.events }}</b>events analysed</div>
+<div><b>{{ d.summary.findings }}</b>findings</div>
+<div><b>{{ d.summary.stages }}</b>chain stages</div>
+<div><b>{{ d.summary.attempts_only }}</b>attempts-only actors</div>
+<div><b>{{ d.summary.unprovable }}</b>unprovable items</div>
+<div><b>{{ d.summary.sentences }}</b>verified sentences</div>
+</div>
+</section>
+
+<section id="sec-timeline" aria-label="Timeline">
+<h2>Timeline (UTC)</h2>
+<div class="tl">
+{% for b in tl.stages %}
+<div class="lanehead">{{ b.icon }} {{ b.name }} ({{ b.label }})</div>
+<div class="lane"><button type="button" class="bar {{ b.status }}" style="left:{{ b.left }}%;width:{{ b.width }}%" data-stage="{{ b.name }}" title="{{ b.name }}: {{ b.label }}, {{ b.start }} to {{ b.end }}" aria-label="{{ b.name }}, {{ b.label }}, {{ b.start }} to {{ b.end }}. Go to stage card."></button></div>
+{% endfor %}
+{% if tl.actors %}
+<div class="sep">Attempts only - no successful access observed</div>
+{% for b in tl.actors %}
+<div class="lanehead">{{ b.icon }} {{ b.name }} ({{ b.label }})</div>
+<div class="lane"><button type="button" class="bar attempts_only" style="left:{{ b.left }}%;width:{{ b.width }}%" data-actor="{{ b.name }}" title="{{ b.name }}: no successful access observed, {{ b.start }} to {{ b.end }}" aria-label="{{ b.name }}, attempts only, no successful access observed, {{ b.start }} to {{ b.end }}. Go to section."></button></div>
+{% endfor %}
+{% endif %}
+<div></div>
+<div class="axis">{% for t in tl.ticks %}<span style="left:{{ t.pos }}%">{{ t.label }}</span>{% endfor %}</div>
+</div>
+<p class="muted">Axis in UTC.
+{% if d.case.clock_offsets %}Clock offsets applied (host clock ahead of true time, event times moved earlier): {% for h, s in d.case.clock_offsets.items() %}{{ h }}={{ s }}s {% endfor %}
+{% else %}No clock offsets applied: times are as logged. Skew is never corrected automatically.{% endif %}
+Cross-host links use a {{ d.case.tolerance_seconds }}s tolerance.</p>
+</section>
+
+<section id="sec-executive" aria-label="Executive summary">
+<h2>Executive summary</h2>
+{% if d.executive_summary %}{{ sents(d.executive_summary) }}{% else %}<p class="muted">No verified executive summary available.</p>{% endif %}
+</section>
+
+<div id="sec-stages">
+{% for s in d.stages %}
+<article class="stage-card" id="stage-{{ s.stage }}" tabindex="-1">
+<h2>{{ loop.index }}. {{ s.stage }}
+<span class="status {{ s.status }}">{{ status[s.status][0] }} {{ status[s.status][1] }}</span></h2>
+<div class="muted">{{ s.start }} to {{ s.end }} &middot; {{ s.evidence_total }} evidence events &middot; findings {{ s.finding_ids|join(", ") }}</div>
+<div>
+{% for k, label in (("ips","IP"),("users","user"),("hosts","host"),("urls","URL")) %}{% for v in s.entities[k] %}<span class="chip" title="{{ label }}">{{ label }}: {{ v }}</span>{% endfor %}{% endfor %}
+</div>
+<div class="cols">
+<div class="blk">
+<h3>Established facts (deterministic)</h3>
+<ul class="s">
+{% for f in s.facts %}
+<li>{{ f.text }} {% for c in f.cites %}{{ chip(c) }}{% endfor %}</li>
+{% endfor %}
+</ul>
+</div>
+<div class="blk">
+<h3>Narrative (verified sentences)</h3>
+{% if s.sentences %}{{ sents(s.sentences) }}{% else %}<p class="muted">No verified narrative available for this stage.</p>{% endif %}
+</div>
+</div>
+</article>
+{% endfor %}
+</div>
+
+<section id="sec-attempts" aria-label="Attempts only">
+<h2>Attempts only - no successful access observed</h2>
+{% for a in d.attempts_only %}
+<div class="blk" id="actor-{{ a.ip }}">
+<h3><span class="status attempts_only">{{ status.attempts_only[0] }} attempts only</span> {{ a.ip }}</h3>
+<div class="muted">{{ a.first }} to {{ a.last }} &middot; {{ a.evidence_count }} events &middot; {{ a.stages|join(", ") }}</div>
+<p>{{ a.statement }}</p>
+{% if a.sentences %}{{ sents(a.sentences) }}{% endif %}
+</div>
+{% else %}
+<p class="muted">None.</p>
+{% endfor %}
+</section>
+
+<section id="sec-unprovable" aria-label="What could not be proven">
+<h2>What could not be proven</h2>
+{% for u in d.unprovable %}
+<div class="blk">
+<h3><span class="status unprovable">? unprovable</span> {{ u.finding_id }} (affects {{ u.affects_stage }})</h3>
+<p>{{ u.summary }}</p>
+<div class="muted">{{ u.evidence_count }} indirect evidence events &middot; users: {{ u.users|join(", ") }} &middot; hosts: {{ u.hosts|join(", ") }}</div>
+{% if u.sentences %}{{ sents(u.sentences) }}{% endif %}
+</div>
+{% else %}
+<p class="muted">Nothing was flagged as unprovable.</p>
+{% endfor %}
+{% if d.unlinked %}
+<h3>Findings not linked to the attack chain</h3>
+<ul class="s">{% for f in d.unlinked %}<li>{{ f.finding_id }} ({{ f.stage }}): {{ f.summary }} <span class="muted">- {{ f.reason }}</span></li>{% endfor %}</ul>
+{% endif %}
+</section>
+
+<section id="sec-method" aria-label="Method and limits">
+<details id="method-details">
+<summary>Method and limits</summary>
+<h3>Pipeline</h3>
+<ul class="s">{% for l in d.pipeline %}<li>{{ l }}</li>{% endfor %}</ul>
+<h3>Models</h3>
+{% if d.case.mode == "llm" %}
+<p>Narrator: {{ d.case.narrator_model }} &middot; judge: {{ d.case.judge_model or "none" }} &middot; Ollama {{ d.case.ollama_version or "version unknown" }}</p>
+{% if d.case.model_digests %}<ul class="s mono">{% for m, g in d.case.model_digests.items() %}<li>{{ m }}: {{ g }}</li>{% endfor %}</ul>{% endif %}
+{% else %}<p>No models were used for this report ({{ d.case.mode }}).</p>{% endif %}
+<h3>Thresholds in use</h3>
+<p class="mono">{% for k, v in d.case.thresholds.items() %}{{ k }}={{ v }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
+<h3>Clock offsets</h3>
+<p>Skew is never auto-corrected. Offsets are applied only through the explicit <span class="mono">--clock-offset HOST=SECONDS</span> flag. Cross-host links use the tolerance ({{ d.case.tolerance_seconds }}s). Applied here: {{ d.case.clock_offsets or "none" }}.</p>
+<h3>Data</h3>
+<table>
+<tr><th>Source</th><th>Events</th></tr>
+{% for k, v in d.stats.events_by_source.items() %}<tr><td>{{ k }}</td><td>{{ v }}</td></tr>{% endfor %}
+<tr><td>unparsed</td><td>{{ d.stats.unparsed }}</td></tr>
+</table>
+<p class="mono">findings per rule: {% for k, v in d.stats.findings_per_rule.items() %}{{ k }}={{ v }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
+<h3>Verification statistics</h3>
+{% set v = d.stats.verification %}
+{% if v %}
+<ul class="s">
+<li>Sentences accepted: {{ v.accepted }}; dropped: {{ v.dropped }}; units shown as deterministic fallback: {{ v.fallback_units|join(", ") or "none" }}</li>
+<li>Repair: failing at first attempt {{ v.repair.failing_at_attempt0 }}, fixed by repair {{ v.repair.fixed_total }}, still failing {{ v.repair.still_failing }}</li>
+<li>Judge: {{ v.judge_model or "none" }}; independent: {{ v.judge_independent }}; double judging: {{ v.judge_double }}; agreement rate: {{ v.judge_agreement_rate if v.judge_agreement_rate is not none else "n/a" }}</li>
+</ul>
+{% else %}<p class="muted">No verification data (narrative_verified.json missing).</p>{% endif %}
+<h3>Known limits</h3>
+<ul class="s">{% for l in d.limits %}<li>{{ l }}</li>{% endfor %}</ul>
+</details>
+</section>
+
+<footer>
+EvidenceWeave {{ d.case.tool_version or "" }}{% if d.case.git_commit %} &middot; commit {{ d.case.git_commit }}{% endif %}
+{% if d.case.synthetic %} &middot; All data in this report is synthetic.{% endif %}
+</footer>
+</main>
+
+<aside id="drawer" role="dialog" aria-modal="false" aria-labelledby="dr-title" hidden>
+<h2 id="dr-title">Evidence <span id="dr-id" class="mono"></span></h2>
+<div><button type="button" class="act" id="dr-close">Close (Esc)</button><button type="button" class="act" id="dr-copy">Copy event id</button> <span id="dr-msg" class="muted" role="status"></span></div>
+<p class="muted">Raw log line, exactly as written:</p>
+<pre id="dr-raw"></pre>
+<table>
+<tr><th>File : line</th><td id="dr-file"></td></tr>
+<tr><th>Timestamp (UTC, corrected)</th><td id="dr-ts"></td></tr>
+<tr><th>Timestamp as logged</th><td id="dr-raw-ts"></td></tr>
+<tr><th>Action</th><td id="dr-action"></td></tr>
+<tr><th>Host</th><td id="dr-host"></td></tr>
+</table>
+<h3>Context (neighbouring lines, not cited)</h3>
+<ul id="dr-ctx" style="padding:0"></ul>
+</aside>
+
+<script type="application/json" id="ew-data">{{ data_json|safe }}</script>
+<script>
+(function () {
+  "use strict";
+  var DATA = JSON.parse(document.getElementById("ew-data").textContent);
+  var drawer = document.getElementById("drawer"), last = null, cur = null;
+  function put(id, text) { document.getElementById(id).textContent = text == null ? "-" : String(text); }
+  function openDrawer(btn) {
+    var id = btn.getAttribute("data-id"), ev = DATA.evidence[id];
+    if (!ev) { return; }
+    last = btn; cur = id;
+    put("dr-id", id); put("dr-raw", ev.text);
+    put("dr-file", ev.file == null ? "-" : ev.file + " : " + ev.line);
+    put("dr-ts", ev.timestamp); put("dr-raw-ts", ev.raw_timestamp || "same as above");
+    put("dr-action", ev.action); put("dr-host", ev.host); put("dr-msg", "");
+    var ul = document.getElementById("dr-ctx");
+    while (ul.firstChild) { ul.removeChild(ul.firstChild); }
+    var items = (ev.context || []).slice();
+    items.push({ line: ev.line, text: ev.text, rel: 0, hit: true });
+    items.sort(function (a, b) { return a.rel - b.rel; });
+    items.forEach(function (c) {
+      var li = document.createElement("li");
+      li.className = "ctx" + (c.hit ? " hit" : "");
+      li.textContent = (c.hit ? "cited ▶ " : "context  ") + c.line + ": " + c.text;
+      ul.appendChild(li);
+    });
+    drawer.hidden = false;
+    document.getElementById("dr-close").focus();
+  }
+  function closeDrawer() {
+    drawer.hidden = true;
+    if (last) { last.focus(); }
+  }
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest ? e.target.closest("button") : null;
+    if (!t) { return; }
+    if (t.classList.contains("cite")) { openDrawer(t); }
+    else if (t.hasAttribute("data-stage")) { go("stage-" + t.getAttribute("data-stage")); }
+    else if (t.hasAttribute("data-actor")) { go("actor-" + t.getAttribute("data-actor")); }
+    else if (t.id === "dr-close") { closeDrawer(); }
+    else if (t.id === "dr-copy") {
+      try { navigator.clipboard.writeText(cur).then(function () { put("dr-msg", "copied"); }, function () { put("dr-msg", "copy failed"); }); }
+      catch (err) { put("dr-msg", "copy not available"); }
+    }
+  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !drawer.hidden) { closeDrawer(); } });
+  function go(id) {
+    var el = document.getElementById(id);
+    if (!el) { return; }
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    el.classList.add("hl");
+    if (el.focus) { el.setAttribute("tabindex", "-1"); el.focus({ preventScroll: true }); }
+    setTimeout(function () { el.classList.remove("hl"); }, 2500);
+  }
+  var det = document.getElementById("method-details"), was = false;
+  window.addEventListener("beforeprint", function () { was = det.open; det.open = true; });
+  window.addEventListener("afterprint", function () { det.open = was; });
+})();
+</script>
+</body>
+</html>

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from .config import DATA_DIR, OUTPUT_DIR
 
-PHASES = {"analyze": 4, "evaluate": 6}
+PHASES = {"evaluate": 6}
 OVERRIDES = {"cross_host_tolerance_seconds": ["--tolerance-seconds"]}  # extra CLI spellings
 
 
@@ -317,6 +317,30 @@ def main(argv=None):
     v.add_argument("--repair-temperature", type=float, default=0.3)
     v.add_argument("--out", default=str(OUTPUT_DIR))
     v.set_defaults(func=cmd_verify)
+    a = sub.add_parser("analyze", help="one command: parse, correlate, narrate, verify, build the HTML report")
+    a.add_argument("--case-dir", required=True)
+    a.add_argument("--no-llm", action="store_true", help="deterministic facts only: no Ollama, no judge")
+    a.add_argument("--model", help="narrator model (default: env EVIDENCEWEAVE_MODEL or qwen2.5:7b-instruct)")
+    a.add_argument("--judge-model", default="llama3.1:8b")
+    a.add_argument("--narration-mode", choices=["facts", "raw"], default="facts")
+    a.add_argument("--max-facts-per-stage", type=int, default=8)
+    a.add_argument("--max-retries", type=int, default=2)
+    a.add_argument("--max-cites", type=int, default=8)
+    a.add_argument("--single-judge", action="store_true")
+    a.add_argument("--num-ctx", type=int, default=16384)
+    a.add_argument("--repair-temperature", type=float, default=0.3, help=argparse.SUPPRESS)
+    a.add_argument("--clock-offset", type=clock_offset, action="append", metavar="HOST=SECONDS")
+    a.add_argument("--tolerance-seconds", type=int)
+    a.add_argument("--year", type=int)
+    a.add_argument("--reuse", action="store_true", help="skip narrate + verify if their outputs are newer than chain.json")
+    a.add_argument("--out", default=str(OUTPUT_DIR))
+    a.add_argument("--no-open", action="store_true", help="do not open the report in a browser")
+    a.set_defaults(func=lambda args: __import__("evidenceweave.analyze", fromlist=["x"]).cmd_analyze(args))
+    r = sub.add_parser("report", help="build report.html from existing outputs (no pipeline work, no LLM)")
+    r.add_argument("--case-dir", required=True)
+    r.add_argument("--out", default=str(OUTPUT_DIR))
+    r.add_argument("--no-open", action="store_true")
+    r.set_defaults(func=lambda args: __import__("evidenceweave.analyze", fromlist=["x"]).cmd_report(args))
     for name in PHASES:
         sub.add_parser(name, help=f"{name} (placeholder)")
     args = p.parse_args(argv)

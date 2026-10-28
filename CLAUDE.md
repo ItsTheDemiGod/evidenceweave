@@ -104,6 +104,13 @@ Part 0 diagnosis is in `output/diagnosis_phase5b.md` (made by `scripts/make_diag
 - **CLI**: `verify --narration-mode facts|raw --max-facts-per-stage 8 --single-judge --repeat N --repair-temperature 0.3`.
 - Live suite driver: `run_live_5b.sh`; report printer: `scripts/phase5b_report.py`; logs `live5b/`.
 
+## Phase 6a: analyze, report, docs
+- **Fixes**: (A1) `PATH_NOT_GROUNDED` in `verifier/entities.py` (`extract_paths`: POSIX paths with leading slash after start/whitespace/quote/bracket/~ and >=2 segments or an extension, Windows `C:\...`, bare names with ext tar gz zip sh py exe dll ps1 bat txt log conf cfg db sql php bak key pem json xml; and/or, dates, URLs, event/fact IDs excluded; pool = cited events + referenced fact text + event file names). `scripts/path_regression.py` re-checks saved accepted sentences with no LLM: 176 rechecked, 0 fail. (A2) `NarratorConfig.mode` library default is now `facts`; old tests pass `mode="raw"` explicitly. (A3) `schema.format_ts(dt)` = `YYYY-MM-DDTHH:MM:SSZ` for display only; stored formats unchanged.
+- **`analyze`**: `python -m evidenceweave.cli analyze --case-dir D [--no-llm] [--model] [--judge-model] [--narration-mode facts|raw] [--max-facts-per-stage 8] [--max-retries 2] [--max-cites 8] [--single-judge] [--num-ctx 16384] [--clock-offset H=S] [--tolerance-seconds N] [--year Y] [--reuse] [--out output] [--no-open]` (`evidenceweave/analyze.py`). Phases: parse+correlate, narrate, verify+repair, report, one timed line each. `--reuse` skips narrate+verify when narrative_verified.json and verification_report.json are newer than chain.json (and not from --no-llm). Ollama preflight (`check_models`) and any LLMError print the exact fix command plus the `--no-llm` hint. `--no-llm` (`verifier/deterministic.py`): no client built; facts verbatim, one sentence per fact in priority order, layers 1/facts/2/3a, source `deterministic`, `verification.no_llm=true`, banner in the report.
+- **`report`**: `report --case-dir D [--out] [--no-open]` rebuilds `output/<case>/report.html` from existing files only; without narrative_verified.json it shows chain + facts with a notice. Opens the browser via `webbrowser` unless `--no-open` (never fails).
+- **Report** (`evidenceweave/report/{build,render}.py`, `template.html`): one offline file, inline CSS/JS, no framework, no external references, no links. jinja2 autoescape for all text; data embedded as JSON with `<`, `>`, `&` escaped (`<` ...); JS uses textContent only. Jinja comment delimiters are `<<# #>>` (CSS `{#drawer` clashes). Sections: header (mode banners, deterministic verdict from chain counts), summary strip, timeline (positioned bars, status text+icon+pattern, attempts-only lane dashed), executive summary, stage cards (facts | verified sentences with badges LLM + verified / deterministic / template), evidence drawer (raw line, file:line, corrected+logged time, +-3 context lines, Esc, copy id, focus return), attempts-only, could-not-prove, method+limits (details, expanded for print), footer (tool version, git, "synthetic" only if manifest has `synthetic` or `generator_version`; answer key never read). Deterministic given `generated_at`.
+- **Docs/demo**: `README.md`, `docs/DEMO.md` (timed 7 min script, backup plan, checklist, 12 questions, Results placeholder for 6b), `scripts/demo.ps1 [-NoLlm] [-Case] [-Seed]`, `docs/demo/sample_report_case02{,_no_llm}.html`.
+
 ## Phase plan
 - [x] Phase 0 Setup
 - [x] Phase 1 Synthetic log generator + answer key
@@ -112,7 +119,8 @@ Part 0 diagnosis is in `output/diagnosis_phase5b.md` (made by `scripts/make_diag
 - [x] Phase 4 LLM narrator with citations (+ naive baseline)
 - [x] Phase 5 Citation verifier + retry loop
 - [x] Phase 5b Fact-sheet narration, hardened judge, reproducibility
-- [ ] Phase 6 HTML report + evaluation + demo prep
+- [x] Phase 6a analyze command, HTML report, docs + demo kit
+- [ ] Phase 6b multi-case evaluation, held-out corruption pool, manual audit (remaining)
 
 ## Working rules (Claude Code)
 - Work on one phase at a time; never start the next phase until the user says so.
@@ -124,11 +132,11 @@ Part 0 diagnosis is in `output/diagnosis_phase5b.md` (made by `scripts/make_diag
 - venv built from the standard Windows Python 3.12 (`%LOCALAPPDATA%\Programs\Python\Python312`), not the MSYS2 `python` on PATH, which creates a non-standard `.venv/bin` layout without `Scripts\Activate.ps1`.
 
 ## Open issues
+- (Phase 6a) Live case02 run: only 15 of 27 first-pass+repair sentences accepted, judge agreement 0.80; the report is correct but plain. Badge tooltips list the checks generically, not per verdict. Report timeline uses one row per stage; no search box.
 - (Phase 5b, measured) Judge protocol limits: an aggregate claim ("4 failed logons", "ran 4 times") cannot be backed by ONE quote, so it is structurally rejected (JUDGE_QUOTE_INVALID/PARTIAL); relational words ("preceded", "over the network", "was recorded") are marked "not shown". The status fact cannot be proven by the judge.
 - (Phase 5b) llama3.1:8b is unreliable and only partly reproducible: judge_agreement 0.92-0.96 (case01), 0.80 (case02); JUDGE_DISAGREE 4 / 12 sentences; ~60 sentences per run where the judge's own verdict differs from the code-derived one. Seed 43 at temperature 0 gives little independence.
 - (Phase 5b) Facts narration is thin and repetitive ("An event in this stage was logged at T"), fact coverage only 0.48-0.50; case01 lateral_movement ended with a single "Events were logged from..." sentence. Facts runs are near-identical across the 3 repeats (temperature 0 / fixed seed), so min/max show little variance; case02 was identical in all three.
 - (Phase 5b) Corruption: fabricated_entity missed 2/8 per run on case01 (persistence/brute_force sentence + invented path); fabricated_claim_no_entity missed 1/8 on case01, 0 on case02. False rejection of clean controls 1/12 (case01, JUDGE_PARTIAL on a sudo command) and 1/15 (case02, JUDGE_QUOTE_INVALID + DISAGREE).
-- (Phase 5b) Library default narration mode is raw; only the CLI defaults to facts.
 - (Phase 5, measured) The 7B narrator mostly IGNORES repair feedback at temperature 0: identical or near-identical sentences come back, so repair rounds recover little (case01: 3/10 -> 4/10 accepted; 3 of 7 units ended as template fallbacks). Many rejections are the semantic layer (e.g. a claim about failed logins in a stage whose allowed events are only the success event) - the narrator cannot satisfy them by citing differently.
 - Normalization is lossy: stripping a quote run also deleted a command's legitimate closing quote, and removing inline IDs can leave dangling phrases ("... as shown by.") that the judge still accepts (seen in the case02 executive summary).
 - The judge (llama3.1:8b) is unreliable for appended claims with no checkable entity: in the first live run it accepted 4/4 `fabricated_claim_no_entity` corruptions, in an identical second run it caught 2/4 (Ollama output was not reproducible across runs even at temperature 0, seed 42). Deterministic layers cannot catch entity-free fabrications.
@@ -203,6 +211,14 @@ Part 0 diagnosis is in `output/diagnosis_phase5b.md` (made by `scripts/make_diag
 - Live (qwen2.5:7b-instruct + llama3.1:8b, num_ctx 16384): case01 facts x3: attempt-0 supported 0.40 (0.38-0.43), final accepted 14.7 (14-15), 0 fallback units, fixed by repair 3.7, ~1525 s/run; raw 1 run: 0.10 -> 2 accepted, 5 fallback units, 300 s. case02 facts x3: 0.30 -> 15 accepted (all runs), 0 fallbacks, ~974 s; raw: 0.21 -> 6 accepted, 1 fallback, 520 s. Corruption (facts, x3, cap 70 reached): case01 catch 0.957, case02 1.000; false rejection 0.083 / 0.067.
 - Decisions: judge quotes may come from the ISO timestamp field (syslog lines lack the year); facts rewritten to be self-provable after smoke runs accepted 1/27; narrative staleness check rebuilds facts.
 - Problems: one judge call took 1817 s (now timeout 300); stale narrative reused in smoke #2; stale events.jsonl (pipeline_meta.json fix); broad process kill was blocked, used TaskStop only.
+
+### Phase 6a - 2026-10-28
+- Built: path grounding, facts default, format_ts, `analyze`/`report` commands, deterministic no-LLM narrative, HTML report, README, DEMO.md, demo.ps1, sample reports.
+- Files: `evidenceweave/{analyze.py,report/*,verifier/deterministic.py}`, edits in `verifier/{entities,verdicts,repair}.py`, `narrator/narrate.py`, `schema.py`, `cli.py`, `scripts/{path_regression.py,demo.ps1}`, `tests/test_report.py` (21 tests), `README.md`, `docs/`.
+- Tests: 190 passed (21 new; 3 old assertions adapted: explicit raw mode, and the invented-command test now expects PATH_NOT_GROUNDED too).
+- Live (one run, case02 hard, qwen2.5:7b-instruct + llama3.1:8b, double judge): narrate 74.6 s, verify+repair 934.2 s (judge rounds 346/253/221 s), report 0.3 s; accepted 15, dropped 12, no fallback units, judge agreement 0.797; sentences accepted per round 8/27, 4/19, 3/15. `--reuse` rebuild 0.2 s. no-llm: ~0.3 s total, 32/33 sentences accepted, 0 dropped (case02/case01).
+- Decisions: no-llm reuses `_finish` from repair.py (source relabelled `deterministic`); badge tooltips are static per source (not per-verdict); optional search box skipped; manifest "synthetic" flag = `synthetic` key or `generator_version`.
+- Problems: Ollama was not running at start (started `ollama serve`); `{#` in CSS broke Jinja; judge double-run dominates runtime (~15 min).
 
 ## How to run (Windows PowerShell)
 ```powershell

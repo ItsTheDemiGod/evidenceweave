@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from ..schema import iso_z
 from .structure import ID_RE
 from .verdicts import (COMMAND_NOT_GROUNDED, HOST_NOT_GROUNDED, IP_NOT_GROUNDED, MALFORMED_IP, NUMBER_NOT_GROUNDED,
-                       TIME_NOT_GROUNDED, URL_NOT_GROUNDED, USER_NOT_GROUNDED, layer, reason)
+                       PATH_NOT_GROUNDED, TIME_NOT_GROUNDED, URL_NOT_GROUNDED, USER_NOT_GROUNDED, layer, reason)
 
 URL_RE = re.compile(r"https?://[^\s'\"`)>\]]+")
 DOMAIN_RE = re.compile(r"\b(?:[a-z0-9-]+\.)+(?:com|net|org|io|ru|cn|info|biz|xyz|dev|app|co|uk|de|local|internal)\b", re.I)
@@ -18,6 +18,13 @@ HMS_RE = re.compile(r"(?<![\d:])\d{1,2}:\d{2}:\d{2}(?:\.\d+)?(?![\d:])")
 IPLIKE_RE = re.compile(r"\b\d{1,3}(?:[ ]?\.\d+){2,4}\b")  # >= 3 dotted groups (2 groups are decimals, not IPs)
 QUOTED_RE = re.compile(r"`([^`]+)`|\"([^\"]+)\"")
 NUM_RE = re.compile(r"\b\d+\.\d+\b|\b\d{1,3}(?:,\d{3})+\b|\b\d+\b")
+FACT_ID_RE = re.compile(r"\b[a-z_]+-F\d+\b")
+FILE_EXTS = "tar|gz|zip|sh|py|exe|dll|ps1|bat|txt|log|conf|cfg|db|sql|php|bak|key|pem|json|xml"
+# POSIX: leading slash at text start / after whitespace, quote, bracket or ~ (so and/or and dates like 10/27 never match);
+# >= 2 segments, or 1 segment with a file extension. Windows: drive letter + backslash segments. Bare names: known extensions.
+POSIX_PATH_RE = re.compile(r"(?:(?<=^)|(?<=[\s'\"`(\[{~]))(/[\w.\-@+%]+(?:/[\w.\-@+%]+)*)")
+WIN_PATH_RE = re.compile(r"\b[A-Za-z]:\\(?:[\w.\-~$]*[\w.\-~$]\\?)+")
+BARE_FILE_RE = re.compile(rf"(?<![\w/\.\-])[\w\-]+(?:\.[\w\-]+)*\.(?:{FILE_EXTS})\b", re.I)
 USER_PATTERNS = [  # group q = opening quote (quoted names are always checked), group n = the candidate name
     re.compile(r"\b(?:user(?:name)?s?|account)\s+(?:named\s+|called\s+)?(?P<q>[`'\"“]?)(?P<n>[A-Za-z_][\w.\-]*)", re.I),
     re.compile(r"\buser\s*\(\s*(?P<q>['\"`]?)(?P<n>[A-Za-z_][\w.\-]*)['\"`]?\s*\)", re.I),
@@ -51,7 +58,24 @@ class Extracted:
     users: list = field(default_factory=list)
     hosts: list = field(default_factory=list)
     quoted: list = field(default_factory=list)
+    paths: list = field(default_factory=list)
     numbers: list = field(default_factory=list)
+
+
+def extract_paths(t: str) -> list[str]:
+    """File paths in text that has already had URLs, IPs, times and event IDs removed."""
+    t = FACT_ID_RE.sub(" ", t)
+    found = []
+    for m in WIN_PATH_RE.finditer(t):
+        found.append(m.group(0))
+    t = WIN_PATH_RE.sub(" ", t)
+    for m in POSIX_PATH_RE.finditer(t):
+        p = m.group(1).rstrip(".,;:!?")
+        if p.count("/") >= 2 or re.search(rf"\.(?:{FILE_EXTS})$", p, re.I):
+            found.append(p)
+    t = POSIX_PATH_RE.sub(" ", t)
+    found += [m.group(0) for m in BARE_FILE_RE.finditer(t)]
+    return list(dict.fromkeys(p.rstrip(".,;:") for p in found))
 
 
 def _take(pat, text):
@@ -98,6 +122,7 @@ def extract(text: str, host_names=()) -> Extracted:
     ex.iso, t = _take(ISO_RE, t)
     ex.hms, t = _take(HMS_RE, t)
     ex.ip_tokens, t = _take(IPLIKE_RE, t)
+    ex.paths = extract_paths(t)
     for pat in USER_PATTERNS:
         for m in pat.finditer(t):
             name, quoted = m.group("n").rstrip(".-"), bool(m.group("q"))
@@ -128,6 +153,7 @@ class Pool:
     iso: set
     hms: set
     numbers: set
+    path_text: str = ""  # pool text plus the source file names of the events
 
 
 def event_parts(e) -> list[str]:
@@ -159,7 +185,7 @@ def build_pool(events, facts: Facts | None = None) -> Pool:
     nums = {norm_num(n) for n in NUM_RE.findall(text)}
     nums |= {norm_num(d) for s in iso for d in re.findall(r"\d+", s)}
     nums |= {str(n) for n in facts.numbers}
-    return Pool(text, iso, hms, nums)
+    return Pool(text, iso, hms, nums, squash(text + "\n" + "\n".join(e.raw_file for e in events)))
 
 
 def _in_text(token: str, text: str, ip: bool = False) -> bool:
@@ -192,6 +218,9 @@ def check_entities(text: str, pool: Pool, host_names=()) -> dict:
     for d in ex.domains:
         if d.lower() not in pool.text.lower():
             out.append(reason(URL_NOT_GROUNDED, f"domain {d} is not in the cited events"))
+    for pth in ex.paths:
+        if pth not in pool.path_text:
+            out.append(reason(PATH_NOT_GROUNDED, f"path {pth} is not in the cited events"))
     low = pool.text.lower()
     for u in ex.users:
         if not re.search(rf"(?<![\w.\-]){re.escape(u.lower())}(?![\w\-])", low):

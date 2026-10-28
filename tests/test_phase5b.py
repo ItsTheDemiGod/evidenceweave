@@ -649,7 +649,7 @@ def test_raw_mode_behaviour_unchanged(prepared, tmp_path):
             text = json.dumps({"sentences": [{"text": "Something notable was logged.", "cites": [first]}]})
             return LLMResult(True, text, json.loads(text), 0.0)
 
-    out = nc(d, Raw())
+    out = nc(d, Raw(), NarratorConfig(mode="raw"))
     assert out["prompt_version"] == "p4-v1" and out["narration_mode"] == "raw" and out["max_facts_per_stage"] is None
     assert all("facts" not in s for s in out["stages"])
     data = load_case_data(d, load_hosts(prepared / "cases" / "case01"))
